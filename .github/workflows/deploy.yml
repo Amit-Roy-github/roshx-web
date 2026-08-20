@@ -1,0 +1,42 @@
+name: Deploy to Cloud Run
+
+# Auto-deploy on every push to main. Auth is keyless via Workload Identity
+# Federation — no service-account key is ever stored in GitHub.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {} # allow manual runs from the Actions tab
+
+env:
+  PROJECT_ID: hare-krishna-app-498703
+  REGION: asia-south1
+  SERVICE: roshx-web
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        name: Authenticate to Google Cloud (keyless / WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/933507864701/locations/global/workloadIdentityPools/github/providers/github-provider
+          service_account: github-deployer@hare-krishna-app-498703.iam.gserviceaccount.com
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --source . \
+            --region "$REGION" \
+            --project "$PROJECT_ID" \
+            --allow-unauthenticated \
+            --quiet

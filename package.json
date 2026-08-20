@@ -1,0 +1,36 @@
+{
+    "name": "roshx-web",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "engines": { "node": ">=25" },
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc -b && vite build",
+        "preview": "vite preview",
+        "lint": "oxlint",
+        "typecheck": "tsc -b --noEmit",
+        "format": "prettier --write .",
+        "format:check": "prettier --check ."
+    },
+    "dependencies": {
+        "@tanstack/react-query": "^5.101.4",
+        "axios": "^1.19.0",
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8",
+        "react-router-dom": "^7.18.2",
+        "zod": "^4.4.3"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.3.3",
+        "@types/node": "^26.2.0",
+        "@types/react": "^19.2.18",
+        "@types/react-dom": "^19.2.4",
+        "@vitejs/plugin-react": "^6.0.5",
+        "oxlint": "^1.79.0",
+        "prettier": "^3.9.6",
+        "tailwindcss": "^4.3.3",
+        "typescript": "^7.0.2",
+        "vite": "^8.2.1"
+    }
+}

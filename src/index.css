@@ -1,0 +1,57 @@
+@import 'tailwindcss';
+
+/**
+ * One palette, two themes. Every colour in the app comes from these tokens, so
+ * a theme switch is a class on <html> and nothing else has to know.
+ */
+@theme {
+    --font-mono:
+        'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+}
+
+:root {
+    --surface-page: oklch(0.97 0.005 260);
+    --surface-window: oklch(1 0 0);
+    --surface-control: oklch(1 0 0);
+    --surface-control-hover: oklch(0.95 0.008 260);
+    --border-subtle: oklch(0.89 0.008 260);
+    --text-primary: oklch(0.25 0.02 260);
+    --text-muted: oklch(0.55 0.015 260);
+    --text-pending: oklch(0.72 0.012 260);
+    --accent: oklch(0.55 0.19 265);
+    --accent-contrast: oklch(0.99 0 0);
+    --error-text: oklch(0.55 0.21 20);
+    --error-surface: oklch(0.92 0.06 20);
+}
+
+html.dark {
+    --surface-page: oklch(0.19 0.015 265);
+    --surface-window: oklch(0.24 0.018 265);
+    --surface-control: oklch(0.27 0.018 265);
+    --surface-control-hover: oklch(0.32 0.02 265);
+    --border-subtle: oklch(0.34 0.02 265);
+    --text-primary: oklch(0.94 0.005 260);
+    --text-muted: oklch(0.68 0.015 260);
+    --text-pending: oklch(0.45 0.02 265);
+    --accent: oklch(0.72 0.16 265);
+    --accent-contrast: oklch(0.18 0.02 265);
+    --error-text: oklch(0.72 0.19 20);
+    --error-surface: oklch(0.33 0.09 20);
+}
+
+body {
+    background-color: var(--surface-page);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+}
+
+/** The caret sitting under the character that comes next. */
+@keyframes caret-blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.15;
+    }
+}

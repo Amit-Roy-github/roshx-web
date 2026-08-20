@@ -1,9 +1,12 @@
+import type { RefObject } from 'react';
 import { PassageFormat } from '@/products/practice/passage-format.enum';
 
 interface PassageTextProps {
     content: string;
     typedText: string;
     format: PassageFormat;
+    /** Points at the character the reader is about to type, so it can be kept in view. */
+    activeCharacterRef: RefObject<HTMLSpanElement | null>;
 }
 
 /**
@@ -14,7 +17,7 @@ interface PassageTextProps {
  * show up exactly where it happened, and what keeps code passages honest about
  * their spaces.
  */
-export function PassageText({ content, typedText, format }: PassageTextProps) {
+export function PassageText({ content, typedText, format, activeCharacterRef }: PassageTextProps) {
     return (
         <p
             className="font-mono text-[1.05rem] leading-9 whitespace-pre-wrap sm:text-[1.15rem]"
@@ -26,6 +29,7 @@ export function PassageText({ content, typedText, format }: PassageTextProps) {
                     character={character}
                     typedCharacter={typedText[index]}
                     isNext={index === typedText.length}
+                    activeCharacterRef={activeCharacterRef}
                 />
             ))}
         </p>
@@ -36,9 +40,10 @@ interface PassageCharacterProps {
     character: string;
     typedCharacter: string | undefined;
     isNext: boolean;
+    activeCharacterRef: RefObject<HTMLSpanElement | null>;
 }
 
-function PassageCharacter({ character, typedCharacter, isNext }: PassageCharacterProps) {
+function PassageCharacter({ character, typedCharacter, isNext, activeCharacterRef }: PassageCharacterProps) {
     const isUntyped = typedCharacter === undefined;
     const isCorrect = typedCharacter === character;
     // A wrong space has nothing to colour, so it gets a block of colour instead.
@@ -46,6 +51,7 @@ function PassageCharacter({ character, typedCharacter, isNext }: PassageCharacte
 
     return (
         <span
+            ref={isNext ? activeCharacterRef : undefined}
             style={{
                 color: isUntyped ? undefined : isCorrect ? 'var(--text-primary)' : 'var(--error-text)',
                 backgroundColor: isMistypedSpace ? 'var(--error-surface)' : undefined,

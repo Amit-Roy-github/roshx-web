@@ -118,7 +118,16 @@ function GeneratingState() {
 
 function TypingSurface({ passage, session }: { passage: Passage | undefined; session: TypingSession }) {
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const activeCharacterRef = useRef<HTMLSpanElement>(null);
+
     useEffect(() => inputRef.current?.focus(), [passage?.id]);
+
+    // Follow the reader down a long passage ourselves. 'nearest' only moves the
+    // window when the caret would otherwise leave it, so the text sits still
+    // until it genuinely has to move.
+    useEffect(() => {
+        activeCharacterRef.current?.scrollIntoView({ block: 'nearest' });
+    }, [session.cursorIndex]);
 
     if (!passage) {
         return (
@@ -141,13 +150,19 @@ function TypingSurface({ passage, session }: { passage: Passage | undefined; ses
                 content={passage.content}
                 typedText={session.typedText}
                 format={passage.format ?? PassageFormat.PROSE}
+                activeCharacterRef={activeCharacterRef}
             />
-            {/* The real input, invisible over the passage — keeps mobile keyboards working. */}
+            {/*
+              The real input, kept offscreen-small on purpose. A full-size
+              invisible overlay would hold the same text in a different layout,
+              and the browser scrolling to ITS caret is what used to yank the
+              window out from under the reader. One pixel has nowhere to scroll.
+            */}
             <textarea
                 ref={inputRef}
                 value={session.typedText}
                 onChange={(event) => session.handleTypedTextChange(event.target.value)}
-                className="absolute inset-0 h-full w-full cursor-text resize-none opacity-0"
+                className="pointer-events-none absolute top-0 left-0 h-px w-px resize-none border-none p-0 opacity-0"
                 autoCapitalize="off"
                 autoCorrect="off"
                 spellCheck={false}

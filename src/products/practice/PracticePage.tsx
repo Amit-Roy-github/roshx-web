@@ -64,15 +64,22 @@ export function PracticePage() {
         requestPassage(lastRequestedSubject);
     };
 
-    const toggleComposer = () => {
-        setMode((current) =>
-            current === PracticeWindowMode.COMPOSING
-                ? PracticeWindowMode.TYPING
-                : PracticeWindowMode.COMPOSING,
-        );
+    /**
+     * One button, two jobs: open the composer, then send what was written in it.
+     *
+     * Making it toggle back instead would throw away the subject the reader just
+     * typed, which is exactly what it looks like when nothing happens.
+     */
+    const handleGenerateClick = () => {
+        if (mode !== PracticeWindowMode.COMPOSING) {
+            setMode(PracticeWindowMode.COMPOSING);
+            return;
+        }
+        requestPassage(composerText);
     };
 
     const isGenerating = mode === PracticeWindowMode.GENERATING;
+    const isComposing = mode === PracticeWindowMode.COMPOSING;
 
     return (
         <main className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 pt-8 pb-16 sm:pt-14">
@@ -98,11 +105,11 @@ export function PracticePage() {
                     Restart test
                 </ActionButton>
                 <ActionButton
-                    onClick={toggleComposer}
+                    onClick={handleGenerateClick}
                     isActive={mode === PracticeWindowMode.COMPOSING}
-                    isDisabled={isGenerating}
+                    isDisabled={isGenerating || (isComposing && composerText.trim().length === 0)}
                 >
-                    Generate test
+                    {isComposing ? 'Generate' : 'Generate test'}
                 </ActionButton>
             </div>
         </main>

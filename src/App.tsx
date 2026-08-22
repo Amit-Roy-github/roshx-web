@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { useTheme } from '@roshx/ui';
 import { AppHeader } from '@/shared/components/AppHeader';
-import { useTheme } from '@/shared/components/useTheme';
 import { AdminPage } from '@/products/practice/AdminPage';
 import { PracticePage } from '@/products/practice/PracticePage';
 import { DEFAULT_ROUTE_PATH, RoutePath } from '@/routes/routePaths';

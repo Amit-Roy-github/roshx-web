@@ -1,9 +1,13 @@
 import { useEffect, useRef } from 'react';
+import { Card, Spinner, Textarea } from '@roshx/ui';
 import { PassageFormat } from '@/products/practice/passage-format.enum';
 import { PracticeWindowMode } from '@/products/practice/practice-window-mode.enum';
 import { PassageText } from '@/products/practice/PassageText';
 import type { TypingSession } from '@/products/practice/useTypingSession';
 import type { Passage } from '@/products/practice/passage.types';
+
+/** Long enough to describe anything worth practising, short enough to stay a subject. */
+const SUBJECT_MAX_LENGTH = 500;
 
 interface PracticeWindowProps {
     mode: PracticeWindowMode;
@@ -24,18 +28,10 @@ interface PracticeWindowProps {
  */
 export function PracticeWindow(props: PracticeWindowProps) {
     return (
-        // Fixed height, not a minimum: the three modes hold different amounts of
-        // text, and a window that resized as they swapped would shift the page
-        // under the reader mid-sentence. Anything taller scrolls inside.
-        <section
-            className="h-[22rem] overflow-y-auto rounded-2xl border px-6 py-7 shadow-sm sm:h-[24rem] sm:px-9 sm:py-9"
-            style={{
-                backgroundColor: 'var(--surface-window)',
-                borderColor: 'var(--border-subtle)',
-            }}
-        >
+
+        <Card className="h-[22rem] overflow-y-auto px-6 py-7 sm:h-[24rem] sm:px-9 sm:py-9">
             <WindowContents {...props} />
-        </section>
+        </Card>
     );
 }
 
@@ -82,7 +78,7 @@ function SubjectComposer({
     useEffect(() => textareaRef.current?.focus(), []);
 
     return (
-        <textarea
+        <Textarea
             ref={textareaRef}
             value={composerText}
             onChange={(event) => onComposerTextChange(event.target.value)}
@@ -93,11 +89,13 @@ function SubjectComposer({
                     onComposerSubmit();
                 }
             }}
-            maxLength={500}
+            maxLength={SUBJECT_MAX_LENGTH}
             placeholder={errorMessage ?? 'What do you want to practise?'}
             spellCheck={false}
-            className="h-full w-full resize-none border-none bg-transparent p-0 font-mono text-[1.05rem] leading-9 outline-none sm:text-[1.15rem]"
-            style={{ color: 'var(--text-primary)' }}
+            // Stripped back to bare text: a composer that fills its own panel
+            // should look like the passage it is about to become, not like a
+            // form control sitting inside a box.
+            className="h-full resize-none border-none bg-transparent p-0 font-mono text-[1.05rem] leading-9 shadow-none focus-visible:ring-0 sm:text-[1.15rem] dark:bg-transparent"
         />
     );
 }
@@ -105,13 +103,8 @@ function SubjectComposer({
 function GeneratingState() {
     return (
         <div className="flex h-full flex-col items-center justify-center gap-4">
-            <span
-                className="h-7 w-7 animate-spin rounded-full border-2 border-transparent"
-                style={{ borderTopColor: 'var(--accent)', borderRightColor: 'var(--accent)' }}
-            />
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                Writing your passage...
-            </p>
+            <Spinner label="Writing your passage" />
+            <p className="text-sm text-muted-foreground">Writing your passage...</p>
         </div>
     );
 }
@@ -132,9 +125,9 @@ function TypingSurface({ passage, session }: { passage: Passage | undefined; ses
     if (!passage) {
         return (
             <div className="flex h-full items-center justify-center">
-                <p className="max-w-sm text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-                    Hit <strong style={{ color: 'var(--text-primary)' }}>Generate test</strong> and say what
-                    you want to practise. Anything at all.
+                <p className="max-w-sm text-center text-sm text-muted-foreground">
+                    Hit <strong className="text-foreground">Generate test</strong> and say what you want to
+                    practise. Anything at all.
                 </p>
             </div>
         );
@@ -143,9 +136,7 @@ function TypingSurface({ passage, session }: { passage: Passage | undefined; ses
     return (
         // Clicking anywhere on the passage puts the caret back where it belongs.
         <div onClick={() => inputRef.current?.focus()} className="relative cursor-text">
-            <p className="mb-4 text-xs tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
-                {passage.title}
-            </p>
+            <p className="mb-4 text-xs tracking-wide text-muted-foreground uppercase">{passage.title}</p>
             <PassageText
                 content={passage.content}
                 typedText={session.typedText}

@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { ActionButton } from '@/shared/components/ActionButton';
+import { pickRandomItem } from '@roshx/core';
+import { AppButton } from '@/shared/components/AppButton';
 import { PracticeWindowMode } from '@/products/practice/practice-window-mode.enum';
-import { fetchOpeningPassage, generatePassage } from '@/products/practice/passageApi';
+import { fetchRecentPassages, generatePassage } from '@/products/practice/passageApi';
 import { PracticeWindow } from '@/products/practice/PracticeWindow';
 import { SessionStats } from '@/products/practice/SessionStats';
 import { useTypingSession } from '@/products/practice/useTypingSession';
 import type { Passage } from '@/products/practice/passage.types';
 
 const GENERATION_FAILED_MESSAGE = 'Could not write that one. Try rephrasing it.';
+const RECENT_PASSAGES_QUERY_KEY = ['recent-passages'];
 
 /**
  * The whole app: one window, three buttons.
@@ -18,28 +20,33 @@ const GENERATION_FAILED_MESSAGE = 'Could not write that one. Try rephrasing it.'
  */
 export function PracticePage() {
     const [mode, setMode] = useState<PracticeWindowMode>(PracticeWindowMode.TYPING);
-    const [generatedPassage, setGeneratedPassage] = useState<Passage | undefined>(undefined);
+    const [passage, setPassage] = useState<Passage | undefined>(undefined);
     const [composerText, setComposerText] = useState('');
     const [lastRequestedSubject, setLastRequestedSubject] = useState('');
 
-    // Something to type the moment the page opens, picked from what already
-    // exists — an empty window gives a first-time visitor nothing to do, and
-    // generating for them would cost ten seconds they did not ask for.
-    const openingPassageQuery = useQuery({
-        queryKey: ['opening-passage'],
-        queryFn: fetchOpeningPassage,
+    // The pool is fetched once and never again: these are passages other people
+    // already wrote, and nothing about them changes while the page is open.
+    const recentPassagesQuery = useQuery({
+        queryKey: RECENT_PASSAGES_QUERY_KEY,
+        queryFn: fetchRecentPassages,
         staleTime: Number.POSITIVE_INFINITY,
     });
+    const recentPassages = recentPassagesQuery.data;
 
-    // What the reader made themselves always wins over what they were handed.
-    const passage = generatedPassage ?? openingPassageQuery.data ?? undefined;
     const session = useTypingSession(passage?.content ?? '');
+
+    const showAnotherPassage = () => {
+        setPassage(pickRandomItem(recentPassages ?? []));
+    };
+    useEffect(() => {
+        setPassage(pickRandomItem(recentPassages ?? []));
+    }, [recentPassages]);
 
     const generation = useMutation({
         mutationFn: generatePassage,
         onMutate: () => setMode(PracticeWindowMode.GENERATING),
         onSuccess: (newPassage) => {
-            setGeneratedPassage(newPassage);
+            setPassage(newPassage);
             session.restart();
             setMode(PracticeWindowMode.TYPING);
         },
@@ -64,12 +71,6 @@ export function PracticePage() {
         requestPassage(lastRequestedSubject);
     };
 
-    /**
-     * One button, two jobs: open the composer, then send what was written in it.
-     *
-     * Making it toggle back instead would throw away the subject the reader just
-     * typed, which is exactly what it looks like when nothing happens.
-     */
     const handleGenerateClick = () => {
         if (mode !== PracticeWindowMode.COMPOSING) {
             setMode(PracticeWindowMode.COMPOSING);
@@ -98,19 +99,23 @@ export function PracticePage() {
             />
 
             <div className="flex flex-wrap justify-center gap-3">
-                <ActionButton onClick={startNewTest} isDisabled={isGenerating}>
+                
+                <AppButton onClick={session.restart} isDisabled={isGenerating || !passage}>
+                    Restart
+                </AppButton>
+                <AppButton onClick={showAnotherPassage}>
+                    Next
+                </AppButton>
+                <AppButton onClick={startNewTest} isDisabled={isGenerating}>
                     New test
-                </ActionButton>
-                <ActionButton onClick={session.restart} isDisabled={isGenerating || !passage}>
-                    Restart test
-                </ActionButton>
-                <ActionButton
+                </AppButton>
+                {mode === PracticeWindowMode.COMPOSING ? (<AppButton
                     onClick={handleGenerateClick}
                     isActive={mode === PracticeWindowMode.COMPOSING}
                     isDisabled={isGenerating || (isComposing && composerText.trim().length === 0)}
                 >
-                    {isComposing ? 'Generate' : 'Generate test'}
-                </ActionButton>
+                    Generate
+                </AppButton>) : false }
             </div>
         </main>
     );

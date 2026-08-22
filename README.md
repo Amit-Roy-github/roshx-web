@@ -1,6 +1,6 @@
 # roshx-web
 
-roshx web — practice today, notes next. Talks to `lal-ju-server/src/apps/roshx`. 
+roshx web — practice today, notes next. Talks to `lal-ju-server/src/apps/roshx`.
 
 ```bash
 nvm use 25

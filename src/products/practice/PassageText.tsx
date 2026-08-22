@@ -1,5 +1,13 @@
 import type { RefObject } from 'react';
+import { cn } from '@roshx/ui';
 import { PassageFormat } from '@/products/practice/passage-format.enum';
+
+/** Code is written against four columns; prose that happens to contain a tab is not. */
+const TAB_SIZE_BY_FORMAT: Record<PassageFormat, number> = {
+    [PassageFormat.CODE]: 4,
+    [PassageFormat.PROSE]: 8,
+    [PassageFormat.SECTIONED]: 8,
+};
 
 interface PassageTextProps {
     content: string;
@@ -20,8 +28,8 @@ interface PassageTextProps {
 export function PassageText({ content, typedText, format, activeCharacterRef }: PassageTextProps) {
     return (
         <p
-            className="font-mono text-[1.05rem] leading-9 whitespace-pre-wrap sm:text-[1.15rem]"
-            style={{ color: 'var(--text-pending)', tabSize: format === PassageFormat.CODE ? 4 : 8 }}
+            className="font-mono text-[1.05rem] leading-9 whitespace-pre-wrap text-pending sm:text-[1.15rem]"
+            style={{ tabSize: TAB_SIZE_BY_FORMAT[format] }}
         >
             {[...content].map((character, index) => (
                 <PassageCharacter
@@ -52,13 +60,15 @@ function PassageCharacter({ character, typedCharacter, isNext, activeCharacterRe
     return (
         <span
             ref={isNext ? activeCharacterRef : undefined}
-            style={{
-                color: isUntyped ? undefined : isCorrect ? 'var(--text-primary)' : 'var(--error-text)',
-                backgroundColor: isMistypedSpace ? 'var(--error-surface)' : undefined,
-                borderRadius: isMistypedSpace ? '2px' : undefined,
-                borderBottom: isNext ? '2px solid var(--accent)' : '2px solid transparent',
-                animation: isNext ? 'caret-blink 1.1s ease-in-out infinite' : undefined,
-            }}
+            className={cn(
+                // Always a bottom border, transparent when this is not the caret:
+                // giving it one only when active would shift every line by 2px
+                // as the reader moves through it.
+                'border-b-2 border-transparent',
+                !isUntyped && (isCorrect ? 'text-foreground' : 'text-destructive'),
+                isMistypedSpace && 'rounded-[2px] bg-mistyped',
+                isNext && 'animate-caret-blink border-primary',
+            )}
         >
             {character}
         </span>

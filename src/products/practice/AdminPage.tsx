@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ActionButton } from '@/shared/components/ActionButton';
+import { Card, cn, Textarea } from '@roshx/ui';
+import { AppButton } from '@/shared/components/AppButton';
 import {
     fetchPracticeConfigs,
     resetPracticeConfig,
@@ -9,6 +10,9 @@ import {
 import type { PracticeConfig } from '@/products/practice/practice-config.types';
 
 const CONFIGS_QUERY_KEY = ['practice-configs'];
+
+/** Tall enough to read a whole system prompt without scrolling it in a slot. */
+const PROMPT_EDITOR_ROWS = 18;
 
 /**
  * The settings behind practice — today, the prompt the generator runs on.
@@ -60,50 +64,40 @@ function ConfigEditor({ config }: { config: PracticeConfig }) {
     const isUnchanged = draftValue.trim() === config.value.trim();
 
     return (
-        <section
-            className="flex flex-col gap-3 rounded-2xl border p-5"
-            style={{ backgroundColor: 'var(--surface-window)', borderColor: 'var(--border-subtle)' }}
-        >
+        <Card className="gap-3 p-5">
             <div className="flex items-baseline justify-between gap-4">
                 <h2 className="font-mono text-sm">{config.key}</h2>
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                <span className="text-xs text-muted-foreground">
                     {config.updatedAt
                         ? `saved ${new Date(config.updatedAt).toLocaleString()}`
                         : 'using default'}
                 </span>
             </div>
 
-            <textarea
+            <Textarea
                 value={draftValue}
                 onChange={(event) => setDraftValue(event.target.value)}
-                rows={18}
+                rows={PROMPT_EDITOR_ROWS}
                 spellCheck={false}
-                className="w-full resize-y rounded-xl border px-4 py-3 font-mono text-[0.8rem] leading-6 outline-none"
-                style={{
-                    backgroundColor: 'var(--surface-page)',
-                    borderColor: 'var(--border-subtle)',
-                    color: 'var(--text-primary)',
-                }}
+                className="resize-y bg-background font-mono text-[0.8rem] leading-6 dark:bg-background"
             />
 
             <div className="flex items-center gap-3">
-                <ActionButton onClick={() => save.mutate()} isActive isDisabled={isBusy || isUnchanged}>
+                <AppButton onClick={() => save.mutate()} isActive isDisabled={isBusy || isUnchanged}>
                     {save.isPending ? 'Saving...' : 'Save'}
-                </ActionButton>
-                <ActionButton onClick={() => reset.mutate()} isDisabled={isBusy || !config.updatedAt}>
+                </AppButton>
+                <AppButton onClick={() => reset.mutate()} isDisabled={isBusy || !config.updatedAt}>
                     Reset to default
-                </ActionButton>
+                </AppButton>
                 {save.isError && <StatusLine isError>Save failed.</StatusLine>}
                 {save.isSuccess && !save.isPending && isUnchanged && <StatusLine>Saved.</StatusLine>}
             </div>
-        </section>
+        </Card>
     );
 }
 
 function StatusLine({ children, isError = false }: { children: React.ReactNode; isError?: boolean }) {
     return (
-        <p className="text-sm" style={{ color: isError ? 'var(--error-text)' : 'var(--text-muted)' }}>
-            {children}
-        </p>
+        <p className={cn('text-sm', isError ? 'text-destructive' : 'text-muted-foreground')}>{children}</p>
     );
 }

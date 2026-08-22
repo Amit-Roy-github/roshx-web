@@ -1,12 +1,35 @@
 @import 'tailwindcss';
+@import '@roshx/ui/styles.css';
+
+/*
+ * Tailwind v4 does not scan node_modules, so the utility classes baked into
+ * @roshx/ui's compiled components — `inline-flex`, `rounded-xl`, `border` and
+ * the rest of shadcn's variants — would never be generated. Without this every
+ * kit component renders unstyled.
+ */
+@source "../node_modules/@roshx/ui/dist";
 
 /**
  * One palette, two themes. Every colour in the app comes from these tokens, so
  * a theme switch is a class on <html> and nothing else has to know.
+ *
+ * `--brand`, not `--accent`: shadcn already owns `--accent`, and there it means
+ * the quiet surface a row turns when you hover it — the opposite of a brand
+ * colour. Two different things cannot share one name.
  */
 @theme {
-    --font-mono:
-        'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+    --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+}
+
+/*
+ * The three things only a typing surface has, promoted to utilities so no
+ * component has to write `style={{ color: 'var(--text-pending)' }}` by hand.
+ * `inline` so they follow the palette across a theme switch.
+ */
+@theme inline {
+    --color-pending: var(--text-pending);
+    --color-mistyped: var(--error-surface);
+    --animate-caret-blink: caret-blink 1.1s ease-in-out infinite;
 }
 
 :root {
@@ -18,8 +41,8 @@
     --text-primary: oklch(0.25 0.02 260);
     --text-muted: oklch(0.55 0.015 260);
     --text-pending: oklch(0.72 0.012 260);
-    --accent: oklch(0.55 0.19 265);
-    --accent-contrast: oklch(0.99 0 0);
+    --brand: oklch(0.55 0.19 265);
+    --brand-contrast: oklch(0.99 0 0);
     --error-text: oklch(0.55 0.21 20);
     --error-surface: oklch(0.92 0.06 20);
 }
@@ -33,10 +56,51 @@ html.dark {
     --text-primary: oklch(0.94 0.005 260);
     --text-muted: oklch(0.68 0.015 260);
     --text-pending: oklch(0.45 0.02 265);
-    --accent: oklch(0.72 0.16 265);
-    --accent-contrast: oklch(0.18 0.02 265);
+    --brand: oklch(0.72 0.16 265);
+    --brand-contrast: oklch(0.18 0.02 265);
     --error-text: oklch(0.72 0.19 20);
     --error-surface: oklch(0.33 0.09 20);
+}
+
+/*
+ * Hand every shadcn token to this app's palette, so a Card or a Dialog out of
+ * the kit lands in the same design as everything around it.
+ *
+ * All of it on :root and none of it on html.dark, deliberately: each var() on
+ * the right re-resolves wherever it is read, and the block above already flips
+ * those. Mapping a token here and leaving its neighbour to the kit's own .dark
+ * is what would split the theme in half.
+ */
+:root {
+    --background: var(--surface-page);
+    --foreground: var(--text-primary);
+    --card: var(--surface-window);
+    --card-foreground: var(--text-primary);
+    --popover: var(--surface-window);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--brand);
+    --primary-foreground: var(--brand-contrast);
+    --secondary: var(--surface-control);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--surface-control-hover);
+    --muted-foreground: var(--text-muted);
+    --accent: var(--surface-control-hover);
+    --accent-foreground: var(--text-primary);
+    --destructive: var(--error-text);
+    --border: var(--border-subtle);
+    --input: var(--border-subtle);
+    --ring: var(--brand);
+}
+
+/*
+ * shadcn's components say `border` and let this rule decide the colour. The kit
+ * leaves it to each app so it never repaints one that has its own palette.
+ */
+@layer base {
+    * {
+        border-color: var(--border);
+        outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+    }
 }
 
 body {

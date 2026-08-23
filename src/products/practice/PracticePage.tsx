@@ -35,11 +35,17 @@ export function PracticePage() {
 
     const session = useTypingSession(passage?.content ?? '');
 
+    // pickRandomItem reports "nothing to pick" as null; this page speaks
+    // undefined, so the two meet here rather than at every call site.
     const showAnotherPassage = () => {
-        setPassage(pickRandomItem(recentPassages ?? []));
+        setPassage(pickRandomItem(recentPassages ?? []) ?? undefined);
     };
+
+    // Something to type the moment the pool arrives. Depends on the data alone:
+    // depending on `passage` would loop, since this is what sets it.
     useEffect(() => {
-        setPassage(pickRandomItem(recentPassages ?? []));
+        showAnotherPassage();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [recentPassages]);
 
     const generation = useMutation({
@@ -83,9 +89,9 @@ export function PracticePage() {
     const isComposing = mode === PracticeWindowMode.COMPOSING;
 
     return (
-        <main className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 pt-8 pb-16 sm:pt-14">
+        <main className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-6 pt-8 pb-16 sm:pt-14">
             <div className="flex items-end justify-between">
-                <SessionStats session={session} totalCharacters={passage?.content.length ?? 0} />
+                <SessionStats session={session} />
             </div>
 
             <PracticeWindow
@@ -99,23 +105,24 @@ export function PracticePage() {
             />
 
             <div className="flex flex-wrap justify-center gap-3">
-                
                 <AppButton onClick={session.restart} isDisabled={isGenerating || !passage}>
                     Restart
                 </AppButton>
-                <AppButton onClick={showAnotherPassage}>
-                    Next
-                </AppButton>
+                <AppButton onClick={showAnotherPassage}>Next</AppButton>
                 <AppButton onClick={startNewTest} isDisabled={isGenerating}>
                     New test
                 </AppButton>
-                {mode === PracticeWindowMode.COMPOSING ? (<AppButton
-                    onClick={handleGenerateClick}
-                    isActive={mode === PracticeWindowMode.COMPOSING}
-                    isDisabled={isGenerating || (isComposing && composerText.trim().length === 0)}
-                >
-                    Generate
-                </AppButton>) : false }
+                {mode === PracticeWindowMode.COMPOSING ? (
+                    <AppButton
+                        onClick={handleGenerateClick}
+                        isActive={mode === PracticeWindowMode.COMPOSING}
+                        isDisabled={isGenerating || (isComposing && composerText.trim().length === 0)}
+                    >
+                        Generate
+                    </AppButton>
+                ) : (
+                    false
+                )}
             </div>
         </main>
     );

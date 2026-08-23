@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { cn } from '@roshx/ui';
 import { PassageFormat } from '@/products/practice/passage-format.enum';
 
@@ -8,6 +8,9 @@ const TAB_SIZE_BY_FORMAT: Record<PassageFormat, number> = {
     [PassageFormat.PROSE]: 8,
     [PassageFormat.SECTIONED]: 8,
 };
+
+/** Which row of the window the line being typed is held at, counting from the top. */
+const ACTIVE_LINE_ROW = 1;
 
 interface PassageTextProps {
     content: string;
@@ -26,10 +29,34 @@ interface PassageTextProps {
  * their spaces.
  */
 export function PassageText({ content, typedText, format, activeCharacterRef }: PassageTextProps) {
+    const paragraphRef = useRef<HTMLParagraphElement>(null);
+    const [scrollOffsetPixels, setScrollOffsetPixels] = useState(0);
+
+    // Which line the reader is on can only be answered by the DOM: the text wraps
+    // on its own, so the same string is a different number of lines at a different
+    // width. offsetTop is the layout position and is unaffected by the transform
+    // below, so measuring it here cannot feed back into itself.
+    useLayoutEffect(() => {
+        const paragraph = paragraphRef.current;
+        const activeCharacter = activeCharacterRef.current;
+        if (!paragraph || !activeCharacter) return;
+
+        const lineHeight = Number.parseFloat(getComputedStyle(paragraph).lineHeight);
+        const activeLineIndex = Math.round(activeCharacter.offsetTop / lineHeight);
+        setScrollOffsetPixels(Math.max(0, activeLineIndex - ACTIVE_LINE_ROW) * lineHeight);
+    }, [content, typedText, activeCharacterRef]);
+
     return (
+        // The passage slides up under the window the card already clips, so the
+        // line being typed stays on the same row instead of the reader's eye
+        // walking down the page.
         <p
-            className="font-mono text-[1.05rem] leading-9 whitespace-pre-wrap text-pending sm:text-[1.15rem]"
-            style={{ tabSize: TAB_SIZE_BY_FORMAT[format] }}
+            ref={paragraphRef}
+            className="relative font-mono text-[1.05rem] leading-9 whitespace-pre-wrap text-pending transition-transform duration-150 ease-out sm:text-[1.15rem]"
+            style={{
+                tabSize: TAB_SIZE_BY_FORMAT[format],
+                transform: `translateY(-${scrollOffsetPixels}px)`,
+            }}
         >
             {[...content].map((character, index) => (
                 <PassageCharacter
@@ -61,13 +88,12 @@ function PassageCharacter({ character, typedCharacter, isNext, activeCharacterRe
         <span
             ref={isNext ? activeCharacterRef : undefined}
             className={cn(
-                // Always a bottom border, transparent when this is not the caret:
-                // giving it one only when active would shift every line by 2px
-                // as the reader moves through it.
+                // Every character carries the border, transparent until it is the
+                // one being typed — a border that appears would shift the line.
                 'border-b-2 border-transparent',
                 !isUntyped && (isCorrect ? 'text-foreground' : 'text-destructive'),
                 isMistypedSpace && 'rounded-[2px] bg-mistyped',
-                isNext && 'animate-caret-blink border-primary',
+                isNext && 'border-primary',
             )}
         >
             {character}

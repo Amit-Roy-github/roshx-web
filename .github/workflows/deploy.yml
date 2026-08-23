@@ -1,12 +1,10 @@
 name: Deploy to Cloud Run
 
-# Manual only for now. Auth is keyless via Workload Identity Federation — no
-# service-account key is ever stored in GitHub.
-#
-# Push-to-deploy is off because this app depends on @roshx/core and @roshx/ui
-# through file:../ paths that live outside this repo, so a CI build cannot
-# resolve them. Restore the `push` trigger once those packages are published.
+# Auth is keyless via Workload Identity Federation — no service-account key is
+# ever stored in GitHub.
 on:
+    push:
+        branches: [main]
     workflow_dispatch: {} # run from the Actions tab
 
 env:

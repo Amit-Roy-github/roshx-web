@@ -28,8 +28,7 @@ interface PracticeWindowProps {
  */
 export function PracticeWindow(props: PracticeWindowProps) {
     return (
-
-        <Card className="h-[22rem] overflow-y-auto px-6 py-7 sm:h-[24rem] sm:px-9 sm:py-9">
+        <Card className="h-[10rem] w-full overflow-y-hidden px-5">
             <WindowContents {...props} />
         </Card>
     );
@@ -111,16 +110,12 @@ function GeneratingState() {
 
 function TypingSurface({ passage, session }: { passage: Passage | undefined; session: TypingSession }) {
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    // React points this at whichever character is next to type — see the ref on
+    // PassageCharacter — so on a fresh passage it is already the first one.
+    // PassageText measures it to decide how far to slide the text up.
     const activeCharacterRef = useRef<HTMLSpanElement>(null);
 
     useEffect(() => inputRef.current?.focus(), [passage?.id]);
-
-    // Follow the reader down a long passage ourselves. 'nearest' only moves the
-    // window when the caret would otherwise leave it, so the text sits still
-    // until it genuinely has to move.
-    useEffect(() => {
-        activeCharacterRef.current?.scrollIntoView({ block: 'nearest' });
-    }, [session.cursorIndex]);
 
     if (!passage) {
         return (
@@ -136,7 +131,6 @@ function TypingSurface({ passage, session }: { passage: Passage | undefined; ses
     return (
         // Clicking anywhere on the passage puts the caret back where it belongs.
         <div onClick={() => inputRef.current?.focus()} className="relative cursor-text">
-            <p className="mb-4 text-xs tracking-wide text-muted-foreground uppercase">{passage.title}</p>
             <PassageText
                 content={passage.content}
                 typedText={session.typedText}

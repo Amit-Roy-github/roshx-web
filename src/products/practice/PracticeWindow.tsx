@@ -28,7 +28,7 @@ interface PracticeWindowProps {
  */
 export function PracticeWindow(props: PracticeWindowProps) {
     return (
-        <Card className="h-[10rem] w-full overflow-y-hidden px-5">
+        <Card className="h-[10rem] w-full overflow-y-hidden border-6 px-5 py-2 bg-dark">
             <WindowContents {...props} />
         </Card>
     );

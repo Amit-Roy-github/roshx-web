@@ -34,12 +34,45 @@ export interface TypingSession {
  * Deliberately state-only — it renders nothing and knows nothing about the DOM,
  * so the window can change how a passage looks without touching the scoring.
  */
-export function useTypingSession(passageContent: string): TypingSession {
-    const [progress, setProgress] = useState<TypingProgress>({
-        typedText: '',
+/** Only spaces and tabs open a line; a newline ends one. */
+const INDENTATION_PATTERN = /^[ \t]*/;
+
+/**
+ * Fills in the indentation a line opens with instead of asking for it.
+ *
+ * Code is mostly indentation, and holding the space bar down measures patience
+ * rather than typing. An editor jumps past it when you press Enter, so the test
+ * does the same — at the start of the passage and after every line break.
+ */
+function withIndentationFilled(passageContent: string, typedText: string): string {
+    const isAtLineStart = typedText.length === 0 || passageContent[typedText.length - 1] === '\n';
+    if (!isAtLineStart) {
+        return typedText;
+    }
+    const indentation = INDENTATION_PATTERN.exec(passageContent.slice(typedText.length))?.[0] ?? '';
+    return typedText + indentation;
+}
+
+function createProgress(passageContent: string): TypingProgress {
+    return {
+        typedText: withIndentationFilled(passageContent, ''),
         startedAt: null,
         finishedAt: null,
-    });
+    };
+}
+
+export function useTypingSession(passageContent: string): TypingSession {
+    const [progress, setProgress] = useState<TypingProgress>(() => createProgress(passageContent));
+
+    // A new passage is a new attempt. Resetting here rather than at every caller
+    // means none of them can forget it, and this is the only place that already
+    // holds the new text — whose first line has to be indented before the reader
+    // touches a key.
+    const [attemptedPassageContent, setAttemptedPassageContent] = useState(passageContent);
+    if (attemptedPassageContent !== passageContent) {
+        setAttemptedPassageContent(passageContent);
+        setProgress(createProgress(passageContent));
+    }
 
     const handleTypedTextChange = useCallback(
         (nextTypedText: string) => {
@@ -49,10 +82,11 @@ export function useTypingSession(passageContent: string): TypingSession {
                 }
                 // Typing past the end of the passage is not an error, it is the end.
                 const clampedText = nextTypedText.slice(0, passageContent.length);
-                const isComplete = clampedText.length === passageContent.length;
+                const filledText = withIndentationFilled(passageContent, clampedText);
+                const isComplete = filledText.length === passageContent.length;
                 return {
-                    typedText: clampedText,
-                    startedAt: current.startedAt ?? (clampedText.length > 0 ? Date.now() : null),
+                    typedText: filledText,
+                    startedAt: current.startedAt ?? (filledText.length > 0 ? Date.now() : null),
                     finishedAt: isComplete ? Date.now() : null,
                 };
             });
@@ -74,8 +108,8 @@ export function useTypingSession(passageContent: string): TypingSession {
     }, [progress.startedAt, progress.finishedAt]);
 
     const restart = useCallback(() => {
-        setProgress({ typedText: '', startedAt: null, finishedAt: null });
-    }, []);
+        setProgress(createProgress(passageContent));
+    }, [passageContent]);
 
     const correctCharacterCount = useMemo(() => {
         let correct = 0;

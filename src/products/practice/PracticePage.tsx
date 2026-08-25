@@ -37,13 +37,8 @@ export function PracticePage() {
 
     // pickRandomItem reports "nothing to pick" as null; this page speaks
     // undefined, so the two meet here rather than at every call site.
-    //
-    // A new passage is a new attempt, so the score and the timer start over —
-    // the session keeps typing progress until it is told otherwise, and it would
-    // otherwise carry the previous passage's keystrokes into this one.
     const showAnotherPassage = () => {
         setPassage(pickRandomItem(recentPassages ?? []) ?? undefined);
-        session.restart();
     };
 
     // Something to type the moment the pool arrives. Depends on the data alone:
@@ -58,7 +53,6 @@ export function PracticePage() {
         onMutate: () => setMode(PracticeWindowMode.GENERATING),
         onSuccess: (newPassage) => {
             setPassage(newPassage);
-            session.restart();
             setMode(PracticeWindowMode.TYPING);
         },
         onError: () => setMode(PracticeWindowMode.COMPOSING),

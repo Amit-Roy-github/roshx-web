@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Card, Spinner, Textarea } from '@roshx/ui';
+import { Card, Empty, EmptyDescription, EmptyHeader, Spinner, Textarea } from '@roshx/ui';
 import { PassageFormat } from '@/products/practice/passage-format.enum';
 import { PracticeWindowMode } from '@/products/practice/practice-window-mode.enum';
 import { PassageText } from '@/products/practice/PassageText';
@@ -28,7 +28,7 @@ interface PracticeWindowProps {
  */
 export function PracticeWindow(props: PracticeWindowProps) {
     return (
-        <Card className="h-[10rem] w-full overflow-y-hidden border-6 px-5 py-2 bg-dark">
+        <Card className="h-[17rem] w-full overflow-y-hidden border-6 px-5 py-2 bg-dark">
             <WindowContents {...props} />
         </Card>
     );
@@ -119,12 +119,16 @@ function TypingSurface({ passage, session }: { passage: Passage | undefined; ses
 
     if (!passage) {
         return (
-            <div className="flex h-full items-center justify-center">
-                <p className="max-w-sm text-center text-sm text-muted-foreground">
-                    Hit <strong className="text-foreground">Generate test</strong> and say what you want to
-                    practise. Anything at all.
-                </p>
-            </div>
+            // Empty brings its own padding for a full page; this one lives in a
+            // card that already has its own, so it only borrows the centring.
+            <Empty className="p-0">
+                <EmptyHeader>
+                    <EmptyDescription>
+                        Hit <strong className="text-foreground">Generate test</strong> and say what you want
+                        to practise. Anything at all.
+                    </EmptyDescription>
+                </EmptyHeader>
+            </Empty>
         );
     }
 

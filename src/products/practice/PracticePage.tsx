@@ -6,6 +6,7 @@ import { PracticeWindowMode } from '@/products/practice/practice-window-mode.enu
 import { fetchRecentPassages, generatePassage } from '@/products/practice/passageApi';
 import { PracticeWindow } from '@/products/practice/PracticeWindow';
 import { SessionStats } from '@/products/practice/SessionStats';
+import { useAttemptReporter } from '@/products/practice/useAttemptReporter';
 import { useTypingSession } from '@/products/practice/useTypingSession';
 import type { Passage } from '@/products/practice/passage.types';
 
@@ -34,6 +35,7 @@ export function PracticePage() {
     const recentPassages = recentPassagesQuery.data;
 
     const session = useTypingSession(passage?.content ?? '');
+    useAttemptReporter(passage?.id, session);
 
     // pickRandomItem reports "nothing to pick" as null; this page speaks
     // undefined, so the two meet here rather than at every call site.

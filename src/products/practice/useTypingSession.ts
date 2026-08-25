@@ -8,12 +8,19 @@ const CHARACTERS_PER_WORD = 5;
 const MILLISECONDS_PER_MINUTE = 60_000;
 
 export interface TypingProgress {
+    /**
+     * Names this run at this passage, so the server can be told about it more
+     * than once. Minted on every reset, because restarting a passage is a new
+     * attempt at it and not a continuation of the last one.
+     */
+    attemptId: string;
     typedText: string;
     startedAt: number | null;
     finishedAt: number | null;
 }
 
 export interface TypingSession {
+    attemptId: string;
     typedText: string;
     /** Index of the character the reader is about to type. */
     cursorIndex: number;
@@ -28,12 +35,6 @@ export interface TypingSession {
     restart: () => void;
 }
 
-/**
- * The typing engine: everything about one attempt at one passage.
- *
- * Deliberately state-only — it renders nothing and knows nothing about the DOM,
- * so the window can change how a passage looks without touching the scoring.
- */
 /** Only spaces and tabs open a line; a newline ends one. */
 const INDENTATION_PATTERN = /^[ \t]*/;
 
@@ -55,12 +56,19 @@ function withIndentationFilled(passageContent: string, typedText: string): strin
 
 function createProgress(passageContent: string): TypingProgress {
     return {
+        attemptId: crypto.randomUUID(),
         typedText: withIndentationFilled(passageContent, ''),
         startedAt: null,
         finishedAt: null,
     };
 }
 
+/**
+ * The typing engine: everything about one attempt at one passage.
+ *
+ * Deliberately state-only — it renders nothing and knows nothing about the DOM,
+ * so the window can change how a passage looks without touching the scoring.
+ */
 export function useTypingSession(passageContent: string): TypingSession {
     const [progress, setProgress] = useState<TypingProgress>(() => createProgress(passageContent));
 
@@ -85,6 +93,7 @@ export function useTypingSession(passageContent: string): TypingSession {
                 const filledText = withIndentationFilled(passageContent, clampedText);
                 const isComplete = filledText.length === passageContent.length;
                 return {
+                    attemptId: current.attemptId,
                     typedText: filledText,
                     startedAt: current.startedAt ?? (filledText.length > 0 ? Date.now() : null),
                     finishedAt: isComplete ? Date.now() : null,
@@ -140,6 +149,7 @@ export function useTypingSession(passageContent: string): TypingSession {
             : 100;
 
     return {
+        attemptId: progress.attemptId,
         typedText: progress.typedText,
         cursorIndex: progress.typedText.length,
         correctCharacterCount,

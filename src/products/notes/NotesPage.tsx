@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Spinner } from '@roshx/ui';
 import { FolderSidebar } from '@/products/notes/FolderSidebar';
 import { NoteForm } from '@/products/notes/NoteForm';
 import { NoteList } from '@/products/notes/NoteList';
@@ -21,11 +20,11 @@ const NOTES_QUERY_KEY = ['notes'];
 const DIRECTORIES_QUERY_KEY = ['directories'];
 
 /**
- * Notes: a folder list, the notes in the chosen folder, and one editor.
+ * Notes: folders and the notes inside them on the left, one editor on the right.
  *
- * Everything on this page is derived from two queries, so a note moving folders
- * or a folder being deleted needs no local bookkeeping — the lists are refetched
- * and the page renders whatever the server now says.
+ * Everything is derived from two queries, so a note changing folders or a folder
+ * being deleted needs no local bookkeeping — the lists are refetched and the
+ * page renders whatever the server now says.
  */
 export function NotesPage() {
     const queryClient = useQueryClient();
@@ -44,8 +43,10 @@ export function NotesPage() {
     const saveNote = useMutation({
         mutationFn: (input: CreateNoteInput) =>
             editingNote ? updateNote(editingNote.id, input) : createNote(input),
-        onSuccess: async () => {
-            setEditingNote(null);
+        onSuccess: async (savedNote) => {
+            // The original keeps editing the note it just saved, and drops back
+            // to a blank form only after a create.
+            setEditingNote(editingNote ? savedNote : null);
             await refreshNotes();
         },
     });
@@ -70,11 +71,12 @@ export function NotesPage() {
 
     const removeFolder = useMutation({
         mutationFn: deleteDirectory,
-        onSuccess: async () => {
-            // Deleting a folder leaves its notes behind as uncategorised, so the
-            // note list changes too — and the page would still be filtered by a
-            // folder that no longer exists.
-            setSelectedFolder(SpecialFolder.ALL);
+        onSuccess: async (_result, deletedFolderId) => {
+            // Its notes stay, now uncategorised, so the note list changes too —
+            // and the page would still be filtered by a folder that is gone.
+            if (selectedFolder === deletedFolderId) {
+                setSelectedFolder(SpecialFolder.ALL);
+            }
             await Promise.all([refreshDirectories(), refreshNotes()]);
         },
     });
@@ -89,27 +91,16 @@ export function NotesPage() {
         return note.folderId === selectedFolder;
     });
 
-    // A note added while a real folder is open belongs in it — anything else
+    // A note written while a real folder is open belongs in it — anything else
     // makes the reader move it by hand straight after writing it.
     const defaultFolderId =
         selectedFolder === SpecialFolder.ALL || selectedFolder === SpecialFolder.UNCATEGORIZED
             ? null
             : selectedFolder;
 
-    if (notesQuery.isPending || directoriesQuery.isPending) {
-        return (
-            <div className="flex min-h-[60dvh] items-center justify-center">
-                <Spinner label="Loading your notes" />
-            </div>
-        );
-    }
-
     return (
-        // Two columns, not three: the folders and the notes inside them are one
-        // list of places to go, and splitting them put the note being edited far
-        // from the note being picked.
-        <div className="grid min-h-[calc(100dvh-5rem)] md:grid-cols-[20rem_minmax(0,1fr)]">
-            <aside className="flex flex-col gap-4 border-r px-4 py-4">
+        <main className="flex flex-1 overflow-hidden bg-notes-app">
+            <div className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto border-r border-notes-line bg-notes-surface px-3 py-8">
                 <FolderSidebar
                     directories={directories}
                     notes={notes}
@@ -119,28 +110,29 @@ export function NotesPage() {
                     onRenameFolder={(id, name) =>
                         renameFolder.mutateAsync({ id, name }).then(() => undefined)
                     }
-                    onDeleteFolder={(id) => removeFolder.mutateAsync(id)}
+                    onDeleteFolder={(id) => removeFolder.mutateAsync(id).then(() => undefined)}
                 />
+                <NoteList
+                    notes={visibleNotes}
+                    selectedNoteId={editingNote?.id ?? null}
+                    onSelect={setEditingNote}
+                />
+            </div>
 
-                <div className="border-t pt-4">
-                    <NoteList
-                        notes={visibleNotes}
-                        selectedNoteId={editingNote?.id ?? null}
-                        onSelect={setEditingNote}
+            <div className="flex-auto overflow-y-auto p-2">
+                <div className="mb-8">
+                    <NoteForm
+                        editingNote={editingNote}
+                        directories={directories}
+                        defaultFolderId={defaultFolderId}
+                        onSubmit={(input) => saveNote.mutateAsync(input).then(() => undefined)}
+                        onCancelEdit={() => setEditingNote(null)}
+                        onDelete={(id) => removeNote.mutateAsync(id)}
                     />
                 </div>
-            </aside>
 
-            <section className="p-4">
-                <NoteForm
-                    editingNote={editingNote}
-                    directories={directories}
-                    defaultFolderId={defaultFolderId}
-                    onSubmit={(input) => saveNote.mutateAsync(input).then(() => undefined)}
-                    onCancelEdit={() => setEditingNote(null)}
-                    onDelete={(id) => removeNote.mutateAsync(id)}
-                />
-            </section>
-        </div>
+                {notesQuery.isError && <p className="mb-4 text-notes-danger">Could not load your notes.</p>}
+            </div>
+        </main>
     );
 }

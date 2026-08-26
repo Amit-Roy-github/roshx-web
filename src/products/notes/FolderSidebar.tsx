@@ -1,7 +1,21 @@
 import { useState, type KeyboardEvent } from 'react';
-import { cn, Input } from '@roshx/ui';
+import { cn } from '@roshx/ui';
 import { SpecialFolder } from '@/products/notes/specialFolder.enum';
 import type { Directory, Note } from '@/products/notes/note.types';
+
+const rowClass = (isActive: boolean) =>
+    cn(
+        'min-w-0 flex-1 rounded-md px-2.5 py-1.5 text-left text-sm transition-colors',
+        isActive
+            ? 'bg-notes-accent-strong/10 text-notes-accent'
+            : 'text-notes-ink-muted hover:bg-notes-line-faint hover:text-notes-ink',
+    );
+
+const inlineInputClass =
+    'min-w-0 flex-1 rounded-md border border-notes-line px-2.5 py-1.5 text-sm text-notes-ink outline-none focus:border-notes-accent';
+
+const iconButtonClass =
+    'rounded px-1 py-0.5 text-xs text-notes-ink-faint transition-colors hover:bg-notes-line-faint hover:text-notes-ink';
 
 interface FolderSidebarProps {
     directories: Directory[];
@@ -54,7 +68,6 @@ export function FolderSidebar({
 
     const handleEditingKeyDown = (event: KeyboardEvent, commit: () => void, cancel: () => void) => {
         if (event.key === 'Enter') {
-            event.preventDefault();
             commit();
         }
         if (event.key === 'Escape') {
@@ -63,80 +76,38 @@ export function FolderSidebar({
     };
 
     return (
-        <nav className="flex flex-col gap-1">
-            <div className="flex items-center justify-between px-2.5 pb-1">
-                <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <div className="flex flex-col gap-0.5 border-b border-notes-line-faint pb-3">
+            <div className="mb-1 flex items-center justify-between px-1">
+                <span className="text-xs font-semibold tracking-wide text-notes-ink-faint uppercase">
                     Folders
                 </span>
                 <button
                     type="button"
                     title="New folder"
                     onClick={() => setNewFolderName('')}
-                    className="px-1 text-base leading-none text-muted-foreground hover:text-foreground"
+                    className="rounded px-1.5 py-0.5 text-xs text-notes-ink-faint transition-colors hover:bg-notes-line-faint hover:text-notes-ink"
                 >
                     +
                 </button>
             </div>
 
-            <FolderRow
-                label="All Notes"
-                count={notes.length}
-                isSelected={selectedFolder === SpecialFolder.ALL}
-                onSelect={() => onSelectFolder(SpecialFolder.ALL)}
-            />
-            <FolderRow
-                label="Uncategorized"
-                count={uncategorizedCount}
-                isSelected={selectedFolder === SpecialFolder.UNCATEGORIZED}
-                onSelect={() => onSelectFolder(SpecialFolder.UNCATEGORIZED)}
-            />
-
-            {directories.map((directory) =>
-                renamingFolderId === directory.id ? (
-                    <Input
-                        key={directory.id}
-                        autoFocus
-                        value={renameValue}
-                        onChange={(event) => setRenameValue(event.target.value)}
-                        onBlur={() => void submitRename(directory.id)}
-                        onKeyDown={(event) =>
-                            handleEditingKeyDown(
-                                event,
-                                () => void submitRename(directory.id),
-                                () => setRenamingFolderId(null),
-                            )
-                        }
-                        className="h-8 text-sm"
-                    />
-                ) : (
-                    <div key={directory.id} className="group flex items-center gap-1">
-                        <FolderRow
-                            label={directory.name}
-                            count={notes.filter((note) => note.folderId === directory.id).length}
-                            isSelected={selectedFolder === directory.id}
-                            onSelect={() => onSelectFolder(directory.id)}
-                            onRename={() => {
-                                setRenamingFolderId(directory.id);
-                                setRenameValue(directory.name);
-                            }}
-                        />
-                        <button
-                            type="button"
-                            title={`Delete ${directory.name}`}
-                            onClick={() => void onDeleteFolder(directory.id)}
-                            className="rounded px-1.5 py-1 text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                ),
-            )}
+            <button
+                type="button"
+                className={rowClass(selectedFolder === SpecialFolder.ALL)}
+                onClick={() => onSelectFolder(SpecialFolder.ALL)}
+            >
+                <span className="flex items-center justify-between gap-2">
+                    <span className="truncate">All Notes</span>
+                    <span className="text-xs text-notes-ink-faint">{notes.length}</span>
+                </span>
+            </button>
 
             {newFolderName !== null && (
-                <Input
+                <input
+                    type="text"
                     autoFocus
-                    value={newFolderName}
                     placeholder="Folder name"
+                    value={newFolderName}
                     onChange={(event) => setNewFolderName(event.target.value)}
                     onBlur={() => void submitCreate()}
                     onKeyDown={(event) =>
@@ -146,38 +117,79 @@ export function FolderSidebar({
                             () => setNewFolderName(null),
                         )
                     }
-                    className="mt-1 h-8 text-sm"
+                    className={inlineInputClass}
                 />
             )}
-        </nav>
-    );
-}
 
-interface FolderRowProps {
-    label: string;
-    count: number;
-    isSelected: boolean;
-    onSelect: () => void;
-    /** Only real folders can be renamed; "All notes" is a filter, not a folder. */
-    onRename?: () => void;
-}
+            {directories.map((directory) => (
+                <div key={directory.id} className="group flex items-center gap-1">
+                    {renamingFolderId === directory.id ? (
+                        <input
+                            type="text"
+                            autoFocus
+                            aria-label="Rename folder"
+                            value={renameValue}
+                            onChange={(event) => setRenameValue(event.target.value)}
+                            onBlur={() => void submitRename(directory.id)}
+                            onKeyDown={(event) =>
+                                handleEditingKeyDown(
+                                    event,
+                                    () => void submitRename(directory.id),
+                                    () => setRenamingFolderId(null),
+                                )
+                            }
+                            className={inlineInputClass}
+                        />
+                    ) : (
+                        <>
+                            <button
+                                type="button"
+                                className={rowClass(selectedFolder === directory.id)}
+                                onClick={() => onSelectFolder(directory.id)}
+                            >
+                                <span className="flex items-center justify-between gap-2">
+                                    <span className="truncate">{directory.name}</span>
+                                    <span className="text-xs text-notes-ink-faint">
+                                        {notes.filter((note) => note.folderId === directory.id).length}
+                                    </span>
+                                </span>
+                            </button>
+                            <div className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
+                                <button
+                                    type="button"
+                                    title="Rename folder"
+                                    onClick={() => {
+                                        setRenamingFolderId(directory.id);
+                                        setRenameValue(directory.name);
+                                    }}
+                                    className={iconButtonClass}
+                                >
+                                    ✎
+                                </button>
+                                <button
+                                    type="button"
+                                    title="Delete folder"
+                                    onClick={() => void onDeleteFolder(directory.id)}
+                                    className="rounded px-1 py-0.5 text-xs text-notes-ink-faint transition-colors hover:bg-notes-danger/10 hover:text-notes-danger"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            ))}
 
-function FolderRow({ label, count, isSelected, onSelect, onRename }: FolderRowProps) {
-    return (
-        <button
-            type="button"
-            onClick={onSelect}
-            onDoubleClick={onRename}
-            title={onRename ? 'Double-click to rename' : undefined}
-            className={cn(
-                'flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-sm transition-colors',
-                isSelected
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-            )}
-        >
-            <span className="truncate">{label}</span>
-            <span className="text-xs">{count}</span>
-        </button>
+            <button
+                type="button"
+                className={rowClass(selectedFolder === SpecialFolder.UNCATEGORIZED)}
+                onClick={() => onSelectFolder(SpecialFolder.UNCATEGORIZED)}
+            >
+                <span className="flex items-center justify-between gap-2">
+                    <span className="truncate">Uncategorized</span>
+                    <span className="text-xs text-notes-ink-faint">{uncategorizedCount}</span>
+                </span>
+            </button>
+        </div>
     );
 }

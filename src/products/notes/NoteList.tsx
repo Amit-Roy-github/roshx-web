@@ -19,36 +19,47 @@ interface NoteListProps {
 
 export function NoteList({ notes, selectedNoteId, onSelect }: NoteListProps) {
     if (notes.length === 0) {
-        return <p className="text-sm text-muted-foreground">{EMPTY_LIST_MESSAGE}</p>;
+        return <p className="text-sm text-notes-ink-faint">{EMPTY_LIST_MESSAGE}</p>;
     }
 
     return (
-        // Plain buttons rather than a radiogroup. A radiogroup is one tab stop
-        // with arrow keys inside it, which the Svelte version then had to undo
-        // by hand so Tab could walk the notes one at a time; buttons do that on
-        // their own.
-        <ul className="flex flex-col gap-2">
-            {notes.map((note) => (
-                <li key={note.id}>
+        // Buttons rather than a radiogroup. A radiogroup is one tab stop with
+        // arrow keys inside it, which the original then undid by hand so Tab
+        // could walk the notes one at a time — buttons do that on their own.
+        <div className="flex flex-col gap-3">
+            {notes.map((note) => {
+                const isSelected = note.id === selectedNoteId;
+                return (
                     <button
+                        key={note.id}
                         type="button"
                         onClick={() => onSelect(note)}
-                        aria-current={note.id === selectedNoteId}
+                        aria-current={isSelected}
                         className={cn(
-                            'w-full rounded-lg border px-3 py-2 text-left transition-colors',
-                            note.id === selectedNoteId ? 'border-primary bg-primary/5' : 'hover:bg-accent',
+                            'group flex w-full items-start justify-between gap-3 rounded-xl border border-notes-line p-4 text-left transition-colors outline-none hover:border-notes-line-strong focus-visible:ring-2 focus-visible:ring-notes-accent-strong',
+                            isSelected && 'border-notes-accent-strong bg-notes-accent-strong/10',
                         )}
                     >
-                        <h3 className="truncate font-semibold">{note.title}</h3>
-                        <p className="mt-1 truncate text-sm text-muted-foreground">
-                            {stripHtml(note.content)}
-                        </p>
-                        <span className="mt-1 block text-xs text-muted-foreground">
-                            {new Date(note.updatedAt).toLocaleDateString()}
+                        <div className="min-w-0 flex-1">
+                            <h3 className="truncate font-semibold text-notes-ink">{note.title}</h3>
+                            <p className="mt-1 truncate text-sm text-notes-ink-muted">
+                                {stripHtml(note.content)}
+                            </p>
+                            <span className="mt-1 block text-xs text-notes-ink-faint">
+                                {new Date(note.updatedAt).toLocaleDateString()}
+                            </span>
+                        </div>
+                        <span
+                            className={cn(
+                                'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border border-notes-line-strong',
+                                isSelected && 'border-notes-accent',
+                            )}
+                        >
+                            {isSelected && <span className="size-2 rounded-full bg-notes-accent" />}
                         </span>
                     </button>
-                </li>
-            ))}
-        </ul>
+                );
+            })}
+        </div>
     );
 }

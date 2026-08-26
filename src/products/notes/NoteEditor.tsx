@@ -1,111 +1,38 @@
+import { useEffect } from 'react';
 import Placeholder from '@tiptap/extension-placeholder';
 import TaskItem from '@tiptap/extension-task-item';
 import TaskList from '@tiptap/extension-task-list';
-import type { ReactNode } from 'react';
-import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react';
+import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { cn } from '@roshx/ui';
 import { extractMarkdownFromClipboard, markdownToTiptapHtml } from '@/products/notes/markdownToTiptapHtml';
+import { TOOLBAR_GROUPS, type NoteEditorHandle } from '@/products/notes/noteToolbar';
 
-/** Mac writes ⌘; everyone else writes Ctrl. Only ever shown in a tooltip, and
- * navigator.platform is deprecated, so the frozen userAgent string is enough. */
-const MODIFIER_KEY_LABEL = navigator.userAgent.includes('Mac') ? '⌘' : 'Ctrl';
-
-interface ToolbarAction {
-    label: string;
-    /** The Tiptap node or mark name, which is also how "is it on" is asked. */
-    name: string;
-    shortcut: string;
-    title: string;
-    apply: (editor: Editor) => void;
-}
-
-/**
- * Grouped the way the toolbar reads: marks, then lists, then blocks.
- *
- * Data rather than seven near-identical buttons — the only thing that differs
- * between them is the label and one chained command.
- */
-const TOOLBAR_GROUPS: ToolbarAction[][] = [
-    [
-        {
-            label: 'B',
-            name: 'bold',
-            shortcut: 'B',
-            title: 'Bold',
-            apply: (editor) => editor.chain().focus().toggleBold().run(),
-        },
-        {
-            label: 'I',
-            name: 'italic',
-            shortcut: 'I',
-            title: 'Italic',
-            apply: (editor) => editor.chain().focus().toggleItalic().run(),
-        },
-        {
-            label: '</>',
-            name: 'code',
-            shortcut: 'E',
-            title: 'Inline code',
-            apply: (editor) => editor.chain().focus().toggleCode().run(),
-        },
-    ],
-    [
-        {
-            label: '•—',
-            name: 'bulletList',
-            shortcut: 'Shift+8',
-            title: 'Bullet list',
-            apply: (editor) => editor.chain().focus().toggleBulletList().run(),
-        },
-        {
-            label: '1—',
-            name: 'orderedList',
-            shortcut: 'Shift+7',
-            title: 'Numbered list',
-            apply: (editor) => editor.chain().focus().toggleOrderedList().run(),
-        },
-        {
-            label: '☑—',
-            name: 'taskList',
-            shortcut: 'Shift+9',
-            title: 'Task list',
-            apply: (editor) => editor.chain().focus().toggleTaskList().run(),
-        },
-    ],
-    [
-        {
-            label: '{ }',
-            name: 'codeBlock',
-            shortcut: 'Alt+C',
-            title: 'Code block',
-            apply: (editor) => editor.chain().focus().toggleCodeBlock().run(),
-        },
-    ],
-];
+/** The one place a toolbar name becomes an editor command. */
+const COMMAND_BY_ACTION_NAME: Record<string, (editor: Editor) => void> = {
+    bold: (editor) => editor.chain().focus().toggleBold().run(),
+    italic: (editor) => editor.chain().focus().toggleItalic().run(),
+    code: (editor) => editor.chain().focus().toggleCode().run(),
+    bulletList: (editor) => editor.chain().focus().toggleBulletList().run(),
+    orderedList: (editor) => editor.chain().focus().toggleOrderedList().run(),
+    taskList: (editor) => editor.chain().focus().toggleTaskList().run(),
+    codeBlock: (editor) => editor.chain().focus().toggleCodeBlock().run(),
+};
 
 const EDITOR_CLASS_NAME =
-    'note-prose min-h-[8rem] text-base leading-normal tracking-normal caret-primary outline-none';
+    'note-prose min-h-[8rem] outline-none text-base leading-normal tracking-normal text-notes-ink caret-notes-accent';
 
 interface NoteEditorProps {
     initialContent: string;
     onChange: (html: string) => void;
     /**
-     * Rendered on the toolbar's own row. The folder picker and the save/delete
-     * buttons belong on that line, and the toolbar cannot leave the editor —
-     * this is how both get what they need without passing the editor around.
+     * Handed up so the toolbar can sit in the form's footer row, beside the
+     * folder picker and the save buttons, exactly where it was. The editor is
+     * loaded lazily, so nothing crossing this boundary names a Tiptap type.
      */
-    children?: ReactNode;
+    onHandleChange: (handle: NoteEditorHandle) => void;
 }
 
-/**
- * The note body: a Tiptap editor and the toolbar that drives it.
- *
- * The toolbar lives here rather than in the form because every button needs the
- * editor — separating them would mean handing fifteen methods out through a
- * ref, which is what the Svelte version had to do.
- */
-export function NoteEditor({ initialContent, onChange, children }: NoteEditorProps) {
+export function NoteEditor({ initialContent, onChange, onHandleChange }: NoteEditorProps) {
     const editor = useEditor({
         extensions: [
             StarterKit,
@@ -121,9 +48,9 @@ export function NoteEditor({ initialContent, onChange, children }: NoteEditorPro
                 if (!markdownText) {
                     return false;
                 }
-                // Markdown pasted from elsewhere arrives as plain text, and
-                // Tiptap would keep the asterisks. Converted here so a pasted
-                // note looks like a written one.
+                // Markdown pasted from elsewhere arrives as plain text and Tiptap
+                // would keep the asterisks. Converted so a pasted note looks like
+                // a written one.
                 event.preventDefault();
                 editor?.chain().focus().insertContent(markdownToTiptapHtml(markdownText)).run();
                 return true;
@@ -132,47 +59,26 @@ export function NoteEditor({ initialContent, onChange, children }: NoteEditorPro
         onUpdate: ({ editor: updatedEditor }) => onChange(updatedEditor.getHTML()),
     });
 
-    // Subscribed to the marks alone: without this the toolbar would only notice
-    // the cursor moving into bold text on the next unrelated re-render.
-    // A joined string rather than an array, because useEditorState re-renders
-    // on anything it cannot compare — and a fresh array is never equal to the
-    // last one.
-    const activeNames = useEditorState({
-        editor,
-        selector: ({ editor: currentEditor }) =>
-            TOOLBAR_GROUPS.flat()
-                .filter((action) => currentEditor?.isActive(action.name))
-                .map((action) => action.name)
-                .join(' '),
-    });
-    // Split back into whole names: 'code' is a substring of 'codeBlock', so a
-    // plain includes() would light up the inline-code button inside a block.
-    const activeNameList = activeNames ? activeNames.split(' ') : [];
+    useEffect(() => {
+        if (!editor) {
+            return;
+        }
+        // Every transaction, not only every edit: moving the cursor into bold
+        // text changes what the toolbar should show without changing the note.
+        const publishHandle = () => {
+            onHandleChange({
+                activeNames: TOOLBAR_GROUPS.flat()
+                    .filter((action) => editor.isActive(action.name))
+                    .map((action) => action.name),
+                toggle: (actionName) => COMMAND_BY_ACTION_NAME[actionName]?.(editor),
+            });
+        };
+        publishHandle();
+        editor.on('transaction', publishHandle);
+        return () => {
+            editor.off('transaction', publishHandle);
+        };
+    }, [editor, onHandleChange]);
 
-    return (
-        <div>
-            <EditorContent editor={editor} />
-            <div className="mt-4 flex flex-wrap items-center gap-3 border-t pt-3">
-                {TOOLBAR_GROUPS.map((group) => (
-                    <div key={group[0]?.name} className="flex items-center gap-0.5">
-                        {group.map((action) => (
-                            <button
-                                key={action.name}
-                                type="button"
-                                title={`${action.title} (${MODIFIER_KEY_LABEL}+${action.shortcut})`}
-                                onClick={() => editor && action.apply(editor)}
-                                className={cn(
-                                    'rounded-md px-2 py-1 font-mono text-[11px] leading-none text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
-                                    activeNameList.includes(action.name) && 'bg-primary/10 text-primary',
-                                )}
-                            >
-                                {action.label}
-                            </button>
-                        ))}
-                    </div>
-                ))}
-                {children}
-            </div>
-        </div>
-    );
+    return <EditorContent editor={editor} />;
 }

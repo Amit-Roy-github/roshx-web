@@ -186,3 +186,56 @@ body {
     display: flex;
     gap: 0.5em;
 }
+
+/**
+ * The notes product's own palette, carried over unchanged from sh-web-notes.
+ *
+ * Prefixed because two of these names already mean something else here —
+ * shadcn's `accent` is a quiet hover surface, not indigo — and one palette
+ * quietly overwriting the other is how the whole app changes colour at once.
+ *
+ * The original shipped three themes of its own (dark, solarized, light); its
+ * dark and light values are mapped onto roshx's, so the page looks the same in
+ * both. Solarized has no counterpart here and is not carried over.
+ */
+:root {
+    --notes-app: #fafafa;
+    --notes-surface: #ffffff;
+    --notes-line-faint: #f4f4f5;
+    --notes-line: #e4e4e7;
+    --notes-line-strong: #d4d4d8;
+    --notes-ink: #18181b;
+    --notes-ink-muted: #52525b;
+    --notes-ink-faint: #71717a;
+    --notes-accent: #4338ca;
+    --notes-accent-strong: #4f46e5;
+    --notes-danger: #dc2626;
+}
+
+html.dark {
+    --notes-app: #0a0a0a;
+    --notes-surface: #0a0a0a;
+    --notes-line-faint: #171717;
+    --notes-line: #262626;
+    --notes-line-strong: #404040;
+    --notes-ink: #f5f5f5;
+    --notes-ink-muted: #a3a3a3;
+    --notes-ink-faint: #737373;
+    --notes-accent: #818cf8;
+    --notes-accent-strong: #4f46e5;
+    --notes-danger: #f87171;
+}
+
+@theme inline {
+    --color-notes-app: var(--notes-app);
+    --color-notes-surface: var(--notes-surface);
+    --color-notes-line-faint: var(--notes-line-faint);
+    --color-notes-line: var(--notes-line);
+    --color-notes-line-strong: var(--notes-line-strong);
+    --color-notes-ink: var(--notes-ink);
+    --color-notes-ink-muted: var(--notes-ink-muted);
+    --color-notes-ink-faint: var(--notes-ink-faint);
+    --color-notes-accent: var(--notes-accent);
+    --color-notes-accent-strong: var(--notes-accent-strong);
+    --color-notes-danger: var(--notes-danger);
+}

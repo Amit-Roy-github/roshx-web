@@ -18,15 +18,21 @@ export function App() {
 
     return (
         <BrowserRouter>
-            <div className="min-h-dvh">
+            {/* A capped column, so a page can hand its own panes the scrollbar
+                instead of the window — which is what notes does. Anything that
+                just grows, like practice, scrolls in the wrapper and looks
+                exactly as it did. */}
+            <div className="flex h-dvh flex-col">
                 <AppHeader theme={theme} onToggleTheme={toggleTheme} />
-                <Routes>
-                    <Route path={RoutePath.HOME} element={<AccountPage />} />
-                    <Route path={RoutePath.PRACTICE} element={<PracticePage />} />
-                    <Route path={RoutePath.NOTES} element={<NotesPage />} />
-                    <Route path={RoutePath.ADMIN} element={<AdminPage />} />
-                    <Route path="*" element={<Navigate to={DEFAULT_ROUTE_PATH} replace />} />
-                </Routes>
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                    <Routes>
+                        <Route path={RoutePath.HOME} element={<AccountPage />} />
+                        <Route path={RoutePath.PRACTICE} element={<PracticePage />} />
+                        <Route path={RoutePath.NOTES} element={<NotesPage />} />
+                        <Route path={RoutePath.ADMIN} element={<AdminPage />} />
+                        <Route path="*" element={<Navigate to={DEFAULT_ROUTE_PATH} replace />} />
+                    </Routes>
+                </div>
             </div>
         </BrowserRouter>
     );

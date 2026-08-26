@@ -1,17 +1,24 @@
-import { Suspense, lazy, useState, type FormEvent } from 'react';
-import { Input, Skeleton } from '@roshx/ui';
-import { AppButton } from '@/shared/components/AppButton';
+import { Suspense, lazy, useCallback, useState, type FormEvent } from 'react';
+import { cn } from '@roshx/ui';
+import { MODIFIER_KEY_LABEL, TOOLBAR_GROUPS, type NoteEditorHandle } from '@/products/notes/noteToolbar';
 import type { CreateNoteInput, Directory, Note } from '@/products/notes/note.types';
 
-// Tiptap and its extensions are the heaviest thing this app loads, and nobody
-// needs them to read a list of notes. Split out so the first paint does not
-// wait for an editor that may never be typed in.
+// Tiptap and its extensions are the heaviest thing this app loads and are not
+// needed for first paint, so they are split into their own chunk instead of
+// sitting on the path that blocks the page becoming interactive.
 const NoteEditor = lazy(() =>
     import('@/products/notes/NoteEditor').then((module) => ({ default: module.NoteEditor })),
 );
 
 const UNCATEGORIZED_OPTION_VALUE = '';
-const EMPTY_CONTENT_MESSAGE = 'Write something first.';
+const EMPTY_CONTENT_MESSAGE = 'Likho kuch toh sahi.';
+
+const toolbarButtonClass = (isActive: boolean) =>
+    cn(
+        'rounded-md px-2 py-1 font-mono text-[11px] leading-none text-notes-ink-faint transition-colors hover:bg-notes-line-faint hover:text-notes-ink',
+        isActive &&
+            'bg-notes-accent-strong/10 text-notes-accent hover:bg-notes-accent-strong/15 hover:text-notes-accent',
+    );
 
 /** Tiptap always returns markup, so emptiness is a question about the text inside it. */
 function isHtmlEmpty(html: string): boolean {
@@ -41,6 +48,7 @@ export function NoteForm({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [showContentError, setShowContentError] = useState(false);
+    const [editorHandle, setEditorHandle] = useState<NoteEditorHandle | null>(null);
 
     // Bumped after every successful create, so the key below changes even though
     // editingNote stays null across back-to-back new notes. Without it the
@@ -50,10 +58,8 @@ export function NoteForm({
 
     // Picking a different note loads it. Done while rendering rather than in an
     // effect so the fields never paint with the previous note's text first.
-    //
-    // Keyed on the note alone, deliberately: changing folders in the sidebar
-    // moves defaultFolderId too, and resetting on that would wipe a half-written
-    // note the moment somebody clicked another folder to look at it.
+    // Keyed on the note alone: changing folders moves defaultFolderId too, and
+    // resetting on that would wipe a half-written note.
     const editingNoteId = editingNote?.id ?? null;
     const [loadedNoteId, setLoadedNoteId] = useState(editingNoteId);
     if (loadedNoteId !== editingNoteId) {
@@ -63,6 +69,10 @@ export function NoteForm({
         setFolderId(editingNote?.folderId ?? defaultFolderId);
         setShowContentError(false);
     }
+
+    // Stable, because the editor re-publishes its handle on every transaction
+    // and a new function here would tear that subscription down each time.
+    const handleEditorHandleChange = useCallback((handle: NoteEditorHandle) => setEditorHandle(handle), []);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -96,31 +106,62 @@ export function NoteForm({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="rounded-lg border p-4">
-            <Input
+        <form onSubmit={handleSubmit} className="flex flex-col rounded-sm border border-notes-line">
+            <input
+                type="text"
+                placeholder="Title"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                placeholder="Title"
                 required
-                className="border-none px-0 text-base shadow-none focus-visible:ring-0"
+                className="rounded-lg px-3 py-2 text-notes-ink placeholder-notes-ink-faint outline-none"
             />
 
-            <Suspense fallback={<Skeleton className="mt-3 h-40 w-full" />}>
-                <NoteEditor
-                    key={editorKey}
-                    initialContent={editingNote?.content ?? ''}
-                    onChange={(html) => {
-                        setContent(html);
-                        if (showContentError && !isHtmlEmpty(html)) {
-                            setShowContentError(false);
-                        }
-                    }}
+            <div className="px-4 py-4">
+                <Suspense
+                    fallback={<div className="min-h-[8rem] animate-pulse rounded-md bg-notes-line-faint" />}
                 >
+                    <NoteEditor
+                        key={editorKey}
+                        initialContent={editingNote?.content ?? ''}
+                        onChange={(html) => {
+                            setContent(html);
+                            if (showContentError && !isHtmlEmpty(html)) {
+                                setShowContentError(false);
+                            }
+                        }}
+                        onHandleChange={handleEditorHandleChange}
+                    />
+                </Suspense>
+                {showContentError && (
+                    <p className="mt-2 text-xs text-notes-danger">{EMPTY_CONTENT_MESSAGE}</p>
+                )}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-notes-line-faint px-4 pt-3 pb-4">
+                <div className="flex flex-wrap items-center gap-3">
+                    {TOOLBAR_GROUPS.map((group) => (
+                        <div key={group[0]?.name} className="flex items-center gap-0.5">
+                            {group.map((action) => (
+                                <button
+                                    key={action.name}
+                                    type="button"
+                                    title={`${action.title} (${MODIFIER_KEY_LABEL}+${action.shortcut})`}
+                                    onClick={() => editorHandle?.toggle(action.name)}
+                                    className={toolbarButtonClass(
+                                        editorHandle?.activeNames.includes(action.name) ?? false,
+                                    )}
+                                >
+                                    {action.label}
+                                </button>
+                            ))}
+                        </div>
+                    ))}
+
                     <select
                         value={folderId ?? UNCATEGORIZED_OPTION_VALUE}
                         onChange={(event) => setFolderId(event.target.value || null)}
                         title="Folder"
-                        className="rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground outline-none hover:text-foreground focus:border-primary"
+                        className="rounded-md border border-notes-line bg-notes-surface px-2 py-1 text-xs text-notes-ink-muted outline-none transition-colors hover:text-notes-ink focus:border-notes-accent"
                     >
                         <option value={UNCATEGORIZED_OPTION_VALUE}>Uncategorized</option>
                         {directories.map((directory) => (
@@ -129,24 +170,37 @@ export function NoteForm({
                             </option>
                         ))}
                     </select>
+                </div>
 
-                    <div className="ml-auto flex items-center gap-2">
-                        <AppButton type="submit" isActive isDisabled={isSubmitting}>
-                            {isSubmitting ? 'Saving...' : editingNote ? 'Save' : 'Add'}
-                        </AppButton>
-                        {editingNote && (
-                            <>
-                                <AppButton onClick={onCancelEdit}>Cancel</AppButton>
-                                <AppButton onClick={() => void handleDelete()} isDisabled={isDeleting}>
-                                    {isDeleting ? 'Deleting...' : 'Delete'}
-                                </AppButton>
-                            </>
-                        )}
-                    </div>
-                </NoteEditor>
-            </Suspense>
-
-            {showContentError && <p className="mt-2 text-xs text-destructive">{EMPTY_CONTENT_MESSAGE}</p>}
+                <div className="flex items-center gap-2">
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="rounded-lg bg-notes-accent-strong px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-notes-accent focus-visible:ring-2 focus-visible:ring-notes-accent-strong/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {isSubmitting ? (editingNote ? 'Saving…' : 'Adding…') : editingNote ? 'Save' : 'Add'}
+                    </button>
+                    {editingNote && (
+                        <>
+                            <button
+                                type="button"
+                                onClick={onCancelEdit}
+                                className="rounded-lg px-4 py-2 text-sm font-medium text-notes-ink-muted transition-colors hover:bg-notes-line hover:text-notes-ink focus-visible:ring-2 focus-visible:ring-notes-line-strong focus-visible:outline-none"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void handleDelete()}
+                                disabled={isDeleting}
+                                className="rounded-lg px-4 py-2 text-sm font-medium text-notes-danger transition-colors hover:bg-notes-danger/10 focus-visible:ring-2 focus-visible:ring-notes-danger/40 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {isDeleting ? 'Deleting…' : 'Delete'}
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
         </form>
     );
 }

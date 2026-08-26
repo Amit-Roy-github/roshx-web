@@ -6,6 +6,8 @@
  * per product from the start rather than sitting at the root.
  */
 export enum RoutePath {
+    /** Signing in, and who you are once you have. Not a product — the site's own page. */
+    HOME = '/',
     PRACTICE = '/practice',
     NOTES = '/notes',
     /** Settings behind practice. Not linked from anywhere — reached by URL. */

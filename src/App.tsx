@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { useTheme } from '@roshx/ui';
+import { AccountPage } from '@/shared/auth/AccountPage';
 import { AppHeader } from '@/shared/components/AppHeader';
 import { AdminPage } from '@/products/practice/AdminPage';
 import { PracticePage } from '@/products/practice/PracticePage';
@@ -19,6 +20,7 @@ export function App() {
             <div className="min-h-dvh">
                 <AppHeader theme={theme} onToggleTheme={toggleTheme} />
                 <Routes>
+                    <Route path={RoutePath.HOME} element={<AccountPage />} />
                     <Route path={RoutePath.PRACTICE} element={<PracticePage />} />
                     <Route path={RoutePath.ADMIN} element={<AdminPage />} />
                     <Route path="*" element={<Navigate to={DEFAULT_ROUTE_PATH} replace />} />

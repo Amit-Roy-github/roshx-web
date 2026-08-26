@@ -3,7 +3,10 @@ import { Button } from '@roshx/ui';
 
 interface AppButtonProps {
     children: ReactNode;
-    onClick: () => void;
+    /** Omitted by a submit button, whose form owns what happens. */
+    onClick?: () => void;
+    /** 'submit' so Enter works in a form, which is how people finish typing one. */
+    type?: 'button' | 'submit';
     isActive?: boolean;
     isDisabled?: boolean;
 }
@@ -15,9 +18,16 @@ interface AppButtonProps {
  * the thing you are doing right now", and shadcn speaks in variants.
  * Translating once here keeps every call site free of that decision.
  */
-export function AppButton({ children, onClick, isActive = false, isDisabled = false }: AppButtonProps) {
+export function AppButton({
+    children,
+    onClick,
+    type = 'button',
+    isActive = false,
+    isDisabled = false,
+}: AppButtonProps) {
     return (
         <Button
+            type={type}
             variant={isActive ? 'default' : 'outline'}
             size="lg"
             onClick={onClick}

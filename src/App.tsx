@@ -3,6 +3,7 @@ import { useTheme } from '@roshx/ui';
 import { AccountPage } from '@/shared/auth/AccountPage';
 import { AppHeader } from '@/shared/components/AppHeader';
 import { AdminPage } from '@/products/practice/AdminPage';
+import { NotesPage } from '@/products/notes/NotesPage';
 import { PracticePage } from '@/products/practice/PracticePage';
 import { DEFAULT_ROUTE_PATH, RoutePath } from '@/routes/routePaths';
 
@@ -22,6 +23,7 @@ export function App() {
                 <Routes>
                     <Route path={RoutePath.HOME} element={<AccountPage />} />
                     <Route path={RoutePath.PRACTICE} element={<PracticePage />} />
+                    <Route path={RoutePath.NOTES} element={<NotesPage />} />
                     <Route path={RoutePath.ADMIN} element={<AdminPage />} />
                     <Route path="*" element={<Navigate to={DEFAULT_ROUTE_PATH} replace />} />
                 </Routes>

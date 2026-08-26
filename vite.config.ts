@@ -3,7 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
-/** The roshx API lives inside lal-ju-server, which listens on 3001 locally. */
+/** The roshx API lives inside lal-ju-server, which listens on 3009 locally. */
 const ROSHX_SERVER_DEV_URL = 'http://localhost:3009';
 
 export default defineConfig({

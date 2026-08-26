@@ -64,8 +64,22 @@ export function FolderSidebar({
 
     return (
         <nav className="flex flex-col gap-1">
+            <div className="flex items-center justify-between px-2.5 pb-1">
+                <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    Folders
+                </span>
+                <button
+                    type="button"
+                    title="New folder"
+                    onClick={() => setNewFolderName('')}
+                    className="px-1 text-base leading-none text-muted-foreground hover:text-foreground"
+                >
+                    +
+                </button>
+            </div>
+
             <FolderRow
-                label="All notes"
+                label="All Notes"
                 count={notes.length}
                 isSelected={selectedFolder === SpecialFolder.ALL}
                 onSelect={() => onSelectFolder(SpecialFolder.ALL)}
@@ -118,15 +132,7 @@ export function FolderSidebar({
                 ),
             )}
 
-            {newFolderName === null ? (
-                <button
-                    type="button"
-                    onClick={() => setNewFolderName('')}
-                    className="mt-2 rounded-md px-2.5 py-1.5 text-left text-sm text-muted-foreground hover:text-foreground"
-                >
-                    + New folder
-                </button>
-            ) : (
+            {newFolderName !== null && (
                 <Input
                     autoFocus
                     value={newFolderName}
@@ -140,7 +146,7 @@ export function FolderSidebar({
                             () => setNewFolderName(null),
                         )
                     }
-                    className="mt-2 h-8 text-sm"
+                    className="mt-1 h-8 text-sm"
                 />
             )}
         </nav>

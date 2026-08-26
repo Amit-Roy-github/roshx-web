@@ -105,8 +105,11 @@ export function NotesPage() {
     }
 
     return (
-        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 md:grid-cols-[14rem_minmax(0,1fr)_20rem]">
-            <aside>
+        // Two columns, not three: the folders and the notes inside them are one
+        // list of places to go, and splitting them put the note being edited far
+        // from the note being picked.
+        <div className="grid min-h-[calc(100dvh-5rem)] md:grid-cols-[20rem_minmax(0,1fr)]">
+            <aside className="flex flex-col gap-4 border-r px-4 py-4">
                 <FolderSidebar
                     directories={directories}
                     notes={notes}
@@ -118,9 +121,17 @@ export function NotesPage() {
                     }
                     onDeleteFolder={(id) => removeFolder.mutateAsync(id)}
                 />
+
+                <div className="border-t pt-4">
+                    <NoteList
+                        notes={visibleNotes}
+                        selectedNoteId={editingNote?.id ?? null}
+                        onSelect={setEditingNote}
+                    />
+                </div>
             </aside>
 
-            <section>
+            <section className="p-4">
                 <NoteForm
                     editingNote={editingNote}
                     directories={directories}
@@ -128,14 +139,6 @@ export function NotesPage() {
                     onSubmit={(input) => saveNote.mutateAsync(input).then(() => undefined)}
                     onCancelEdit={() => setEditingNote(null)}
                     onDelete={(id) => removeNote.mutateAsync(id)}
-                />
-            </section>
-
-            <section>
-                <NoteList
-                    notes={visibleNotes}
-                    selectedNoteId={editingNote?.id ?? null}
-                    onSelect={setEditingNote}
                 />
             </section>
         </div>

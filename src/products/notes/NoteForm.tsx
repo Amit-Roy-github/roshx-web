@@ -96,7 +96,7 @@ export function NoteForm({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-xl border p-4">
+        <form onSubmit={handleSubmit} className="rounded-lg border p-4">
             <Input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
@@ -105,51 +105,48 @@ export function NoteForm({
                 className="border-none px-0 text-base shadow-none focus-visible:ring-0"
             />
 
-            <div>
-                <Suspense fallback={<Skeleton className="h-32 w-full" />}>
-                    <NoteEditor
-                        key={editorKey}
-                        initialContent={editingNote?.content ?? ''}
-                        onChange={(html) => {
-                            setContent(html);
-                            if (showContentError && !isHtmlEmpty(html)) {
-                                setShowContentError(false);
-                            }
-                        }}
-                    />
-                </Suspense>
-                {showContentError && <p className="mt-2 text-xs text-destructive">{EMPTY_CONTENT_MESSAGE}</p>}
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-                <select
-                    value={folderId ?? UNCATEGORIZED_OPTION_VALUE}
-                    onChange={(event) => setFolderId(event.target.value || null)}
-                    title="Folder"
-                    className="rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground outline-none hover:text-foreground focus:border-primary"
+            <Suspense fallback={<Skeleton className="mt-3 h-40 w-full" />}>
+                <NoteEditor
+                    key={editorKey}
+                    initialContent={editingNote?.content ?? ''}
+                    onChange={(html) => {
+                        setContent(html);
+                        if (showContentError && !isHtmlEmpty(html)) {
+                            setShowContentError(false);
+                        }
+                    }}
                 >
-                    <option value={UNCATEGORIZED_OPTION_VALUE}>Uncategorized</option>
-                    {directories.map((directory) => (
-                        <option key={directory.id} value={directory.id}>
-                            {directory.name}
-                        </option>
-                    ))}
-                </select>
+                    <select
+                        value={folderId ?? UNCATEGORIZED_OPTION_VALUE}
+                        onChange={(event) => setFolderId(event.target.value || null)}
+                        title="Folder"
+                        className="rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground outline-none hover:text-foreground focus:border-primary"
+                    >
+                        <option value={UNCATEGORIZED_OPTION_VALUE}>Uncategorized</option>
+                        {directories.map((directory) => (
+                            <option key={directory.id} value={directory.id}>
+                                {directory.name}
+                            </option>
+                        ))}
+                    </select>
 
-                <div className="flex items-center gap-2">
-                    <AppButton type="submit" isActive isDisabled={isSubmitting}>
-                        {isSubmitting ? 'Saving...' : editingNote ? 'Save' : 'Add'}
-                    </AppButton>
-                    {editingNote && (
-                        <>
-                            <AppButton onClick={onCancelEdit}>Cancel</AppButton>
-                            <AppButton onClick={() => void handleDelete()} isDisabled={isDeleting}>
-                                {isDeleting ? 'Deleting...' : 'Delete'}
-                            </AppButton>
-                        </>
-                    )}
-                </div>
-            </div>
+                    <div className="ml-auto flex items-center gap-2">
+                        <AppButton type="submit" isActive isDisabled={isSubmitting}>
+                            {isSubmitting ? 'Saving...' : editingNote ? 'Save' : 'Add'}
+                        </AppButton>
+                        {editingNote && (
+                            <>
+                                <AppButton onClick={onCancelEdit}>Cancel</AppButton>
+                                <AppButton onClick={() => void handleDelete()} isDisabled={isDeleting}>
+                                    {isDeleting ? 'Deleting...' : 'Delete'}
+                                </AppButton>
+                            </>
+                        )}
+                    </div>
+                </NoteEditor>
+            </Suspense>
+
+            {showContentError && <p className="mt-2 text-xs text-destructive">{EMPTY_CONTENT_MESSAGE}</p>}
         </form>
     );
 }

@@ -1,6 +1,7 @@
 import Placeholder from '@tiptap/extension-placeholder';
 import TaskItem from '@tiptap/extension-task-item';
 import TaskList from '@tiptap/extension-task-list';
+import type { ReactNode } from 'react';
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { cn } from '@roshx/ui';
@@ -89,6 +90,12 @@ const EDITOR_CLASS_NAME =
 interface NoteEditorProps {
     initialContent: string;
     onChange: (html: string) => void;
+    /**
+     * Rendered on the toolbar's own row. The folder picker and the save/delete
+     * buttons belong on that line, and the toolbar cannot leave the editor —
+     * this is how both get what they need without passing the editor around.
+     */
+    children?: ReactNode;
 }
 
 /**
@@ -98,7 +105,7 @@ interface NoteEditorProps {
  * editor — separating them would mean handing fifteen methods out through a
  * ref, which is what the Svelte version had to do.
  */
-export function NoteEditor({ initialContent, onChange }: NoteEditorProps) {
+export function NoteEditor({ initialContent, onChange, children }: NoteEditorProps) {
     const editor = useEditor({
         extensions: [
             StarterKit,
@@ -145,7 +152,7 @@ export function NoteEditor({ initialContent, onChange }: NoteEditorProps) {
     return (
         <div>
             <EditorContent editor={editor} />
-            <div className="mt-3 flex flex-wrap items-center gap-3">
+            <div className="mt-4 flex flex-wrap items-center gap-3 border-t pt-3">
                 {TOOLBAR_GROUPS.map((group) => (
                     <div key={group[0]?.name} className="flex items-center gap-0.5">
                         {group.map((action) => (
@@ -164,6 +171,7 @@ export function NoteEditor({ initialContent, onChange }: NoteEditorProps) {
                         ))}
                     </div>
                 ))}
+                {children}
             </div>
         </div>
     );

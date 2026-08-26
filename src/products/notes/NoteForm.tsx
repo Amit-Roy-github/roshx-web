@@ -1,6 +1,16 @@
-import { Suspense, lazy, useCallback, useState, type FormEvent } from 'react';
+import {
+    Suspense,
+    lazy,
+    useCallback,
+    useImperativeHandle,
+    useRef,
+    useState,
+    type FormEvent,
+    type Ref,
+} from 'react';
 import { cn } from '@roshx/ui';
-import { MODIFIER_KEY_LABEL, TOOLBAR_GROUPS, type NoteEditorHandle } from '@/products/notes/noteToolbar';
+import { MODIFIER_KEY_LABEL } from '@/products/notes/keyboard';
+import { TOOLBAR_GROUPS, type NoteEditorHandle } from '@/products/notes/noteToolbar';
 import type { CreateNoteInput, Directory, Note } from '@/products/notes/note.types';
 
 // Tiptap and its extensions are the heaviest thing this app loads and are not
@@ -25,7 +35,15 @@ function isHtmlEmpty(html: string): boolean {
     return html.replace(/<[^>]*>/g, '').trim().length === 0;
 }
 
+/** What the page's keyboard shortcuts need to reach inside the form. */
+export interface NoteFormHandle {
+    requestSubmit: () => void;
+    focusTitle: () => void;
+    focusContent: () => void;
+}
+
 interface NoteFormProps {
+    ref?: Ref<NoteFormHandle>;
     editingNote: Note | null;
     directories: Directory[];
     defaultFolderId: string | null;
@@ -35,6 +53,7 @@ interface NoteFormProps {
 }
 
 export function NoteForm({
+    ref,
     editingNote,
     directories,
     defaultFolderId,
@@ -42,6 +61,8 @@ export function NoteForm({
     onCancelEdit,
     onDelete,
 }: NoteFormProps) {
+    const formRef = useRef<HTMLFormElement>(null);
+    const titleInputRef = useRef<HTMLInputElement>(null);
     const [title, setTitle] = useState(editingNote?.title ?? '');
     const [content, setContent] = useState(editingNote?.content ?? '');
     const [folderId, setFolderId] = useState<string | null>(editingNote?.folderId ?? defaultFolderId);
@@ -73,6 +94,22 @@ export function NoteForm({
     // Stable, because the editor re-publishes its handle on every transaction
     // and a new function here would tear that subscription down each time.
     const handleEditorHandleChange = useCallback((handle: NoteEditorHandle) => setEditorHandle(handle), []);
+
+    useImperativeHandle(
+        ref,
+        () => ({
+            requestSubmit: () => formRef.current?.requestSubmit(),
+            focusTitle: () => {
+                const titleInput = titleInputRef.current;
+                titleInput?.focus();
+                // Caret at the end, not selecting what is already there — the
+                // shortcut is for carrying on, not for starting over.
+                titleInput?.setSelectionRange(titleInput.value.length, titleInput.value.length);
+            },
+            focusContent: () => editorHandle?.focusEnd(),
+        }),
+        [editorHandle],
+    );
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -106,8 +143,13 @@ export function NoteForm({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col rounded-sm border border-notes-line">
+        <form
+            ref={formRef}
+            onSubmit={handleSubmit}
+            className="flex flex-col rounded-sm border border-notes-line"
+        >
             <input
+                ref={titleInputRef}
                 type="text"
                 placeholder="Title"
                 value={title}

@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useTheme } from '@roshx/ui';
 import { AccountPage } from '@/shared/auth/AccountPage';
 import { AppHeader } from '@/shared/components/AppHeader';
@@ -14,16 +14,33 @@ import { DEFAULT_ROUTE_PATH, RoutePath } from '@/routes/routePaths';
  * folder under products/ — nothing else about this file has to change.
  */
 export function App() {
-    const { theme, toggleTheme } = useTheme();
-
     return (
         <BrowserRouter>
+            <AppShell />
+        </BrowserRouter>
+    );
+}
+
+/**
+ * Inside the router, because it asks which route is showing.
+ *
+ * Notes brings its own header — a short bordered strip on its own surface, with
+ * its own help button — so the site header stands down there rather than
+ * learning what notes needs.
+ */
+function AppShell() {
+    const { theme, toggleTheme } = useTheme();
+    const { pathname } = useLocation();
+    const hasOwnHeader = pathname === RoutePath.NOTES;
+
+    return (
+        <>
             {/* A capped column, so a page can hand its own panes the scrollbar
                 instead of the window — which is what notes does. Anything that
                 just grows, like practice, scrolls in the wrapper and looks
                 exactly as it did. */}
             <div className="flex h-dvh flex-col">
-                <AppHeader theme={theme} onToggleTheme={toggleTheme} />
+                {!hasOwnHeader && <AppHeader theme={theme} onToggleTheme={toggleTheme} />}
                 <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                     <Routes>
                         <Route path={RoutePath.HOME} element={<AccountPage />} />
@@ -34,6 +51,6 @@ export function App() {
                     </Routes>
                 </div>
             </div>
-        </BrowserRouter>
+        </>
     );
 }

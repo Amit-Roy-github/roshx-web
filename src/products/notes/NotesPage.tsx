@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FolderSidebar } from '@/products/notes/FolderSidebar';
-import { NoteForm } from '@/products/notes/NoteForm';
+import { HelpDialog } from '@/products/notes/HelpDialog';
+import { NotesHeader } from '@/products/notes/NotesHeader';
+import { isEditableElementFocused, isModifierKeyPressed } from '@/products/notes/keyboard';
+import { NoteForm, type NoteFormHandle } from '@/products/notes/NoteForm';
 import { NoteList } from '@/products/notes/NoteList';
 import { SpecialFolder } from '@/products/notes/specialFolder.enum';
 import {
@@ -30,6 +33,8 @@ export function NotesPage() {
     const queryClient = useQueryClient();
     const [selectedFolder, setSelectedFolder] = useState<string>(SpecialFolder.ALL);
     const [editingNote, setEditingNote] = useState<Note | null>(null);
+    const [isHelpOpen, setIsHelpOpen] = useState(false);
+    const noteFormRef = useRef<NoteFormHandle>(null);
 
     const notesQuery = useQuery({ queryKey: NOTES_QUERY_KEY, queryFn: fetchNotes });
     const directoriesQuery = useQuery({ queryKey: DIRECTORIES_QUERY_KEY, queryFn: fetchDirectories });
@@ -98,41 +103,102 @@ export function NotesPage() {
             ? null
             : selectedFolder;
 
-    return (
-        <main className="flex flex-1 overflow-hidden bg-notes-app">
-            <div className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto border-r border-notes-line bg-notes-surface px-3 py-8">
-                <FolderSidebar
-                    directories={directories}
-                    notes={notes}
-                    selectedFolder={selectedFolder}
-                    onSelectFolder={setSelectedFolder}
-                    onCreateFolder={(name) => addFolder.mutateAsync(name).then(() => undefined)}
-                    onRenameFolder={(id, name) =>
-                        renameFolder.mutateAsync({ id, name }).then(() => undefined)
-                    }
-                    onDeleteFolder={(id) => removeFolder.mutateAsync(id).then(() => undefined)}
-                />
-                <NoteList
-                    notes={visibleNotes}
-                    selectedNoteId={editingNote?.id ?? null}
-                    onSelect={setEditingNote}
-                />
-            </div>
+    useEffect(() => {
+        const handleShortcut = (event: KeyboardEvent) => {
+            const isModifierPressed = isModifierKeyPressed(event);
+            const isTyping = isEditableElementFocused();
 
-            <div className="flex-auto overflow-y-auto p-2">
-                <div className="mb-8">
-                    <NoteForm
-                        editingNote={editingNote}
+            if (event.key === 'Escape' && isTyping) {
+                (document.activeElement as HTMLElement).blur();
+                return;
+            }
+            if (isModifierPressed && event.key === 'Enter') {
+                event.preventDefault();
+                noteFormRef.current?.requestSubmit();
+                return;
+            }
+            // event.code, not event.key: on macOS Option+N is a dead key for
+            // composing "ñ", so with Alt held the key arrives as "Dead".
+            if (isModifierPressed && event.altKey && event.code === 'KeyN') {
+                event.preventDefault();
+                setEditingNote(null);
+                noteFormRef.current?.focusTitle();
+                return;
+            }
+            if (
+                isModifierPressed &&
+                (event.key === 'Backspace' || event.key === 'Delete') &&
+                editingNote &&
+                !isTyping
+            ) {
+                event.preventDefault();
+                void removeNote.mutateAsync(editingNote.id);
+                return;
+            }
+            if (!isModifierPressed && event.key === '/' && !isTyping) {
+                event.preventDefault();
+                noteFormRef.current?.focusTitle();
+                return;
+            }
+            if (isModifierPressed && event.key === '/') {
+                event.preventDefault();
+                noteFormRef.current?.focusContent();
+                return;
+            }
+            if ((isModifierPressed && event.key.toLowerCase() === 'h') || (!isTyping && event.key === '?')) {
+                event.preventDefault();
+                setIsHelpOpen(true);
+            }
+        };
+
+        window.addEventListener('keydown', handleShortcut);
+        return () => window.removeEventListener('keydown', handleShortcut);
+    }, [editingNote, removeNote]);
+
+    return (
+        <div className="flex min-h-0 flex-1 flex-col">
+            <NotesHeader onOpenHelp={() => setIsHelpOpen(true)} />
+
+            <main className="flex flex-1 overflow-hidden bg-notes-app">
+                <div className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto border-r border-notes-line bg-notes-surface px-3 py-8">
+                    <FolderSidebar
                         directories={directories}
-                        defaultFolderId={defaultFolderId}
-                        onSubmit={(input) => saveNote.mutateAsync(input).then(() => undefined)}
-                        onCancelEdit={() => setEditingNote(null)}
-                        onDelete={(id) => removeNote.mutateAsync(id)}
+                        notes={notes}
+                        selectedFolder={selectedFolder}
+                        onSelectFolder={setSelectedFolder}
+                        onCreateFolder={(name) => addFolder.mutateAsync(name).then(() => undefined)}
+                        onRenameFolder={(id, name) =>
+                            renameFolder.mutateAsync({ id, name }).then(() => undefined)
+                        }
+                        onDeleteFolder={(id) => removeFolder.mutateAsync(id).then(() => undefined)}
+                    />
+                    <NoteList
+                        notes={visibleNotes}
+                        selectedNoteId={editingNote?.id ?? null}
+                        onSelect={setEditingNote}
                     />
                 </div>
 
-                {notesQuery.isError && <p className="mb-4 text-notes-danger">Could not load your notes.</p>}
-            </div>
-        </main>
+                <div className="flex-auto overflow-y-auto p-2">
+                    <div className="mb-8">
+                        <NoteForm
+                            ref={noteFormRef}
+                            editingNote={editingNote}
+                            directories={directories}
+                            defaultFolderId={defaultFolderId}
+                            onSubmit={(input) => saveNote.mutateAsync(input).then(() => undefined)}
+                            onCancelEdit={() => setEditingNote(null)}
+                            onDelete={(id) => removeNote.mutateAsync(id)}
+                        />
+                    </div>
+
+                    {notesQuery.isError && (
+                        <p className="mb-4 text-notes-danger">Could not load your notes.</p>
+                    )}
+                </div>
+            </main>
+
+            <HelpDialog isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+        </div>
     );
 }

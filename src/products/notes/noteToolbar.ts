@@ -34,7 +34,6 @@ export const TOOLBAR_GROUPS: readonly (readonly ToolbarAction[])[] = [
 export interface NoteEditorHandle {
     activeNames: readonly string[];
     toggle: (actionName: string) => void;
+    /** Puts the caret back at the end of the note, for the focus shortcut. */
+    focusEnd: () => void;
 }
-
-/** Mac writes ⌘; everyone else writes Ctrl. Only ever shown in a tooltip. */
-export const MODIFIER_KEY_LABEL = navigator.userAgent.includes('Mac') ? '⌘' : 'Ctrl';

@@ -71,6 +71,7 @@ export function NoteEditor({ initialContent, onChange, onHandleChange }: NoteEdi
                     .filter((action) => editor.isActive(action.name))
                     .map((action) => action.name),
                 toggle: (actionName) => COMMAND_BY_ACTION_NAME[actionName]?.(editor),
+                focusEnd: () => editor.commands.focus('end'),
             });
         };
         publishHandle();

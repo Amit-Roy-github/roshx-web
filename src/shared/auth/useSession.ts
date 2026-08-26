@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react';
-import { login, logout, register } from '@/shared/auth/authApi';
+import { login, loginWithGoogle, logout, register } from '@/shared/auth/authApi';
 import {
     clearPersistedSession,
     getRefreshToken,
@@ -14,6 +14,8 @@ export interface Session {
     isSignedIn: boolean;
     signIn: (credentials: EmailPasswordCredentials) => Promise<void>;
     signUp: (credentials: EmailPasswordCredentials) => Promise<void>;
+    /** Both sign-in and sign-up: Google has already said who this is. */
+    signInWithGoogle: (idToken: string) => Promise<void>;
     signOut: () => Promise<void>;
 }
 
@@ -35,6 +37,10 @@ export function useSession(): Session {
         persistSession(await register(credentials));
     }, []);
 
+    const signInWithGoogle = useCallback(async (idToken: string) => {
+        persistSession(await loginWithGoogle(idToken));
+    }, []);
+
     const signOut = useCallback(async () => {
         const refreshToken = getRefreshToken();
         // Cleared first, and regardless. Whether the server heard about it
@@ -45,5 +51,5 @@ export function useSession(): Session {
         }
     }, []);
 
-    return { user, isSignedIn: user !== null, signIn, signUp, signOut };
+    return { user, isSignedIn: user !== null, signIn, signUp, signInWithGoogle, signOut };
 }

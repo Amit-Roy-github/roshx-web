@@ -1,9 +1,19 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import type { ApiError } from '@roshx/core';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from '@roshx/ui';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+    Input,
+    Label,
+    Separator,
+} from '@roshx/ui';
 import { AppButton } from '@/shared/components/AppButton';
 import { useSession } from '@/shared/auth/useSession';
 import { AccountFormMode } from '@/shared/auth/accountFormMode.enum';
+import { GoogleSignInButton } from '@/shared/auth/GoogleSignInButton';
 
 const MODE_COPY: Record<
     AccountFormMode,
@@ -84,6 +94,18 @@ function AccountForm() {
         }
     };
 
+    // Not part of the form: Google decides when this fires, so it cannot be a
+    // submit, and there is no sign-in/sign-up choice to make — Google has
+    // already said who this is, and the server registers a first-timer.
+    const handleGoogleCredential = (idToken: string) => {
+        setErrorMessage('');
+        setIsSubmitting(true);
+        session
+            .signInWithGoogle(idToken)
+            .catch((error: ApiError) => setErrorMessage(error.message || UNEXPECTED_FAILURE_MESSAGE))
+            .finally(() => setIsSubmitting(false));
+    };
+
     const switchMode = () => {
         setMode(mode === AccountFormMode.SIGN_IN ? AccountFormMode.SIGN_UP : AccountFormMode.SIGN_IN);
         setErrorMessage('');
@@ -133,10 +155,18 @@ function AccountForm() {
                     </AppButton>
                 </form>
 
+                <div className="my-5 flex items-center gap-3">
+                    <Separator className="flex-1" />
+                    <span className="text-xs text-muted-foreground">or</span>
+                    <Separator className="flex-1" />
+                </div>
+
+                <GoogleSignInButton onCredential={handleGoogleCredential} onUnavailable={setErrorMessage} />
+
                 <button
                     type="button"
                     onClick={switchMode}
-                    className="mt-4 w-full text-sm text-muted-foreground hover:text-foreground"
+                    className="mt-5 w-full text-sm text-muted-foreground hover:text-foreground"
                 >
                     {copy.switchLabel}
                 </button>

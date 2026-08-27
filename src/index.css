@@ -121,70 +121,124 @@ body {
 }
 
 /**
- * The note editor's own typography.
+ * The note editor's own typography — the original `prose-note` rules, moved
+ * across as they were.
  *
- * Tiptap writes plain semantic HTML into a div, and Tailwind's preflight
- * strips every heading and list back to body text — so without this a note
- * would look the same whether it was a heading, a bullet or a paragraph.
- * Scoped to .note-prose rather than set globally, because the rest of the app
- * styles its own text with utilities.
+ * Tiptap writes plain semantic HTML into a div and Tailwind's preflight strips
+ * every heading and list back to body text, so without these a note would look
+ * the same whether it was a heading, a bullet or a paragraph. Scoped to
+ * .note-prose because the rest of the app styles its text with utilities.
  */
-.note-prose :where(h1, h2, h3) {
-    font-weight: 600;
-    line-height: 1.3;
-    margin-block: 0.75em 0.35em;
+.note-prose p {
+    margin: 0;
 }
-.note-prose :where(h1) {
+.note-prose p + p {
+    margin-top: 0.25em;
+}
+.note-prose strong {
+    font-weight: 700;
+}
+.note-prose em {
+    font-style: italic;
+}
+.note-prose h1 {
     font-size: 1.5em;
+    font-weight: 700;
+    margin: 0.6em 0 0.3em;
 }
-.note-prose :where(h2) {
-    font-size: 1.25em;
+.note-prose h2 {
+    font-size: 1.3em;
+    font-weight: 700;
+    margin: 0.55em 0 0.25em;
 }
-.note-prose :where(h3) {
-    font-size: 1.1em;
+.note-prose h3 {
+    font-size: 1.15em;
+    font-weight: 600;
+    margin: 0.5em 0 0.25em;
 }
-.note-prose :where(p, ul, ol, blockquote, pre) {
-    margin-block: 0.5em;
+.note-prose h4,
+.note-prose h5,
+.note-prose h6 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 0.5em 0 0.2em;
 }
-.note-prose :where(ul, ol) {
-    padding-inline-start: 1.5em;
+/* A note that opens on a heading should not open on a band of blank space. */
+.note-prose h1:first-child,
+.note-prose h2:first-child,
+.note-prose h3:first-child,
+.note-prose h4:first-child,
+.note-prose h5:first-child,
+.note-prose h6:first-child {
+    margin-top: 0;
 }
-.note-prose :where(ul) {
+.note-prose ul,
+.note-prose ol {
+    padding-left: 1.25em;
+    margin: 0.5em 0;
+}
+.note-prose ul {
     list-style: disc;
 }
-.note-prose :where(ol) {
+.note-prose ol {
     list-style: decimal;
 }
-.note-prose :where(blockquote) {
-    border-inline-start: 2px solid var(--border);
-    color: var(--muted-foreground);
-    padding-inline-start: 0.75em;
-}
-.note-prose :where(code) {
-    background-color: var(--muted);
-    border-radius: 0.25rem;
-    font-size: 0.9em;
+.note-prose code {
+    background: var(--notes-line);
+    border-radius: 0.25em;
     padding: 0.1em 0.35em;
+    font-size: 0.9em;
 }
-.note-prose :where(pre) {
-    background-color: var(--muted);
-    border-radius: 0.5rem;
-    overflow-x: auto;
+.note-prose pre {
+    background: var(--notes-line-faint);
+    border-radius: 0.5em;
     padding: 0.75em 1em;
+    overflow-x: auto;
+    margin: 0.5em 0;
 }
 /* A code block already has the slab behind it; the inline chip would double it. */
-.note-prose :where(pre code) {
+.note-prose pre code {
     background: none;
     padding: 0;
 }
 /* Task list checkboxes sit beside their text, not above a bullet. */
-.note-prose :where(ul[data-type='taskList']) {
+.note-prose ul[data-type='taskList'] {
     list-style: none;
-    padding-inline-start: 0;
+    padding-left: 0;
 }
-.note-prose :where(ul[data-type='taskList'] li) {
+.note-prose ul[data-type='taskList'] li {
     display: flex;
+    align-items: flex-start;
     gap: 0.5em;
+}
+.note-prose ul[data-type='taskList'] li > label {
+    margin-top: 0.2em;
+}
+.note-prose ul[data-type='taskList'] input[type='checkbox'] {
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    border: 1px solid var(--notes-ink-faint);
+    background: var(--notes-line-faint);
+    cursor: pointer;
+}
+.note-prose ul[data-type='taskList'] input[type='checkbox']:checked {
+    background-color: rgb(251 191 36);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%231c1917' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 65%;
+    border-color: rgb(217 119 6);
+}
+/* Tiptap's Placeholder extension writes the text into data-placeholder; this
+   is what actually draws it. */
+.note-prose .is-empty::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    color: var(--notes-ink-faint);
+    pointer-events: none;
 }
 
 /**

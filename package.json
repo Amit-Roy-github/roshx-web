@@ -25,6 +25,7 @@
         "@tiptap/react": "^3.30.4",
         "@tiptap/starter-kit": "^3.30.4",
         "axios": "^1.19.0",
+        "motion": "^13.1.1",
         "react": "^19.2.8",
         "react-dom": "^19.2.8",
         "react-router-dom": "^7.18.2",

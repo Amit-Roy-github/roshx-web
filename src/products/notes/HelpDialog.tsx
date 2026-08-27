@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { FADE_SLIDE_MOTION } from '@/products/notes/fadeMotion';
 import { MODIFIER_KEY_LABEL } from '@/products/notes/keyboard';
 
 interface Shortcut {
@@ -48,46 +50,54 @@ export function HelpDialog({ isOpen, onClose }: HelpDialogProps) {
         return () => window.removeEventListener('keydown', closeOnEscape);
     }, [isOpen, onClose]);
 
-    if (!isOpen) {
-        return null;
-    }
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60" onClick={onClose} role="presentation" />
-            <div
-                role="dialog"
-                aria-modal="true"
-                aria-label="Keyboard shortcuts"
-                className="relative w-full max-w-3xl rounded-xl border border-notes-line bg-notes-surface p-5 shadow-lg"
-            >
-                <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-sm font-semibold text-notes-ink">Keyboard shortcuts</h2>
-                    <button
-                        type="button"
+        // Kept mounted while closing so the panel can fade back out instead of
+        // vanishing — the same entrance and exit the dialog always had.
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <motion.div
+                        {...FADE_SLIDE_MOTION}
+                        className="absolute inset-0 bg-black/60"
                         onClick={onClose}
-                        className="rounded px-2 py-1 text-xs text-notes-ink-faint transition-colors hover:bg-notes-line hover:text-notes-ink"
+                        role="presentation"
+                    />
+                    <motion.div
+                        {...FADE_SLIDE_MOTION}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Keyboard shortcuts"
+                        className="relative w-full max-w-3xl rounded-xl border border-notes-line bg-notes-surface p-5 shadow-lg"
                     >
-                        Close
-                    </button>
-                </div>
+                        <div className="mb-4 flex items-center justify-between">
+                            <h2 className="text-sm font-semibold text-notes-ink">Keyboard shortcuts</h2>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="rounded px-2 py-1 text-xs text-notes-ink-faint transition-colors hover:bg-notes-line hover:text-notes-ink"
+                            >
+                                Close
+                            </button>
+                        </div>
 
-                <div className="grid grid-cols-2 divide-x divide-notes-line">
-                    <div className="pr-10">
-                        <h3 className="mb-2 text-xs font-semibold tracking-wide text-notes-ink-faint uppercase">
-                            Notes
-                        </h3>
-                        <ShortcutList shortcuts={NOTE_SHORTCUTS} />
-                    </div>
-                    <div className="pl-4">
-                        <h3 className="mb-2 text-xs font-semibold tracking-wide text-notes-ink-faint uppercase">
-                            Formatting
-                        </h3>
-                        <ShortcutList shortcuts={FORMATTING_SHORTCUTS} />
-                    </div>
+                        <div className="grid grid-cols-2 divide-x divide-notes-line">
+                            <div className="pr-10">
+                                <h3 className="mb-2 text-xs font-semibold tracking-wide text-notes-ink-faint uppercase">
+                                    Notes
+                                </h3>
+                                <ShortcutList shortcuts={NOTE_SHORTCUTS} />
+                            </div>
+                            <div className="pl-4">
+                                <h3 className="mb-2 text-xs font-semibold tracking-wide text-notes-ink-faint uppercase">
+                                    Formatting
+                                </h3>
+                                <ShortcutList shortcuts={FORMATTING_SHORTCUTS} />
+                            </div>
+                        </div>
+                    </motion.div>
                 </div>
-            </div>
-        </div>
+            )}
+        </AnimatePresence>
     );
 }
 

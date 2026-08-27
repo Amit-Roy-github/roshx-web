@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Placeholder from '@tiptap/extension-placeholder';
 import TaskItem from '@tiptap/extension-task-item';
 import TaskList from '@tiptap/extension-task-list';
@@ -33,6 +33,10 @@ interface NoteEditorProps {
 }
 
 export function NoteEditor({ initialContent, onChange, onHandleChange }: NoteEditorProps) {
+    // handlePaste is built before useEditor returns, so it cannot close over the
+    // editor itself — it reads it back through here instead.
+    const editorRef = useRef<Editor | null>(null);
+
     const editor = useEditor({
         extensions: [
             StarterKit,
@@ -44,15 +48,19 @@ export function NoteEditor({ initialContent, onChange, onHandleChange }: NoteEdi
         editorProps: {
             attributes: { class: EDITOR_CLASS_NAME },
             handlePaste: (_view, event) => {
-                const markdownText = event.clipboardData && extractMarkdownFromClipboard(event.clipboardData);
-                if (!markdownText) {
+                const pastedEditor = editorRef.current;
+                if (!pastedEditor || !event.clipboardData) {
+                    return false;
+                }
+                const markdownText = extractMarkdownFromClipboard(event.clipboardData);
+                if (markdownText === null) {
                     return false;
                 }
                 // Markdown pasted from elsewhere arrives as plain text and Tiptap
                 // would keep the asterisks. Converted so a pasted note looks like
                 // a written one.
                 event.preventDefault();
-                editor?.chain().focus().insertContent(markdownToTiptapHtml(markdownText)).run();
+                pastedEditor.chain().focus().insertContent(markdownToTiptapHtml(markdownText)).run();
                 return true;
             },
         },
@@ -63,6 +71,9 @@ export function NoteEditor({ initialContent, onChange, onHandleChange }: NoteEdi
         if (!editor) {
             return;
         }
+        // Set here rather than during render: this runs on mount, long before
+        // anyone can paste into an editor they have not seen yet.
+        editorRef.current = editor;
         // Every transaction, not only every edit: moving the cursor into bold
         // text changes what the toolbar should show without changing the note.
         const publishHandle = () => {
@@ -78,6 +89,7 @@ export function NoteEditor({ initialContent, onChange, onHandleChange }: NoteEdi
         editor.on('transaction', publishHandle);
         return () => {
             editor.off('transaction', publishHandle);
+            editorRef.current = null;
         };
     }, [editor, onHandleChange]);
 

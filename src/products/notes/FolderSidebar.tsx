@@ -14,6 +14,16 @@ const rowClass = (isActive: boolean) =>
 const inlineInputClass =
     'min-w-0 flex-1 rounded-md border border-notes-line px-2.5 py-1.5 text-sm text-notes-ink outline-none focus:border-notes-accent';
 
+/**
+ * Focus the input the moment it appears, with whatever is already in it
+ * selected — renaming a folder is usually replacing the name, not appending to
+ * it. `autoFocus` alone only does the focusing half.
+ */
+const focusAndSelectOnMount = (input: HTMLInputElement | null) => {
+    input?.focus();
+    input?.select();
+};
+
 const iconButtonClass =
     'rounded px-1 py-0.5 text-xs text-notes-ink-faint transition-colors hover:bg-notes-line-faint hover:text-notes-ink';
 
@@ -105,7 +115,7 @@ export function FolderSidebar({
             {newFolderName !== null && (
                 <input
                     type="text"
-                    autoFocus
+                    ref={focusAndSelectOnMount}
                     placeholder="Folder name"
                     value={newFolderName}
                     onChange={(event) => setNewFolderName(event.target.value)}
@@ -126,7 +136,7 @@ export function FolderSidebar({
                     {renamingFolderId === directory.id ? (
                         <input
                             type="text"
-                            autoFocus
+                            ref={focusAndSelectOnMount}
                             aria-label="Rename folder"
                             value={renameValue}
                             onChange={(event) => setRenameValue(event.target.value)}

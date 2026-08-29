@@ -49,3 +49,17 @@ export async function renameDirectory(id: string, name: string): Promise<Directo
 export async function deleteDirectory(id: string): Promise<void> {
     await apiClient.delete(`${DIRECTORIES_PATH}/${id}`);
 }
+
+/**
+ * Sends the form as-is plus a free-text instruction; gets the edited form
+ * back. Nothing is saved — the result lands in the editor for review.
+ */
+export async function editNoteWithAi(
+    input: Pick<CreateNoteInput, 'title' | 'content'> & { instruction: string },
+): Promise<Pick<CreateNoteInput, 'title' | 'content'>> {
+    const response = await apiClient.post<Pick<CreateNoteInput, 'title' | 'content'>>(
+        `${NOTES_PATH}/ai`,
+        input,
+    );
+    return response.data;
+}

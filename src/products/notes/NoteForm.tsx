@@ -9,7 +9,9 @@ import {
     type Ref,
 } from 'react';
 import { cn } from '@roshx/ui';
+import { AiEditBox } from '@/products/notes/AiEditBox';
 import { MODIFIER_KEY_LABEL } from '@/products/notes/keyboard';
+import { editNoteWithAi } from '@/products/notes/notesApi';
 import { TOOLBAR_GROUPS, type NoteEditorHandle } from '@/products/notes/noteToolbar';
 import type { CreateNoteInput, Directory, Note } from '@/products/notes/note.types';
 
@@ -22,6 +24,7 @@ const NoteEditor = lazy(() =>
 
 const UNCATEGORIZED_OPTION_VALUE = '';
 const EMPTY_CONTENT_MESSAGE = 'Likho kuch toh sahi.';
+const AI_EDIT_FAILED_MESSAGE = 'AI could not edit this note right now.';
 
 const toolbarButtonClass = (isActive: boolean) =>
     cn(
@@ -70,6 +73,9 @@ export function NoteForm({
     const [isDeleting, setIsDeleting] = useState(false);
     const [showContentError, setShowContentError] = useState(false);
     const [editorHandle, setEditorHandle] = useState<NoteEditorHandle | null>(null);
+    const [isAiBoxOpen, setIsAiBoxOpen] = useState(false);
+    const [isAiEditing, setIsAiEditing] = useState(false);
+    const [aiErrorMessage, setAiErrorMessage] = useState<string | null>(null);
 
     // Bumped after every successful create, so the key below changes even though
     // editingNote stays null across back-to-back new notes. Without it the
@@ -127,6 +133,23 @@ export function NoteForm({
             }
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    // Whatever is in the form right now — saved or not — goes to the model,
+    // and the answer replaces it in place. Save is still the author's call.
+    const handleAiEdit = async (instruction: string) => {
+        setIsAiEditing(true);
+        setAiErrorMessage(null);
+        try {
+            const editedNote = await editNoteWithAi({ title, content, instruction });
+            setTitle(editedNote.title);
+            setContent(editedNote.content);
+            editorHandle?.setContent(editedNote.content);
+        } catch {
+            setAiErrorMessage(AI_EDIT_FAILED_MESSAGE);
+        } finally {
+            setIsAiEditing(false);
         }
     };
 
@@ -216,6 +239,14 @@ export function NoteForm({
 
                 <div className="flex items-center gap-2">
                     <button
+                        type="button"
+                        onClick={() => setIsAiBoxOpen((isOpen) => !isOpen)}
+                        title="Edit this note with AI"
+                        className={toolbarButtonClass(isAiBoxOpen)}
+                    >
+                        ✦ AI
+                    </button>
+                    <button
                         type="submit"
                         disabled={isSubmitting}
                         className="rounded-lg bg-notes-accent-strong px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-notes-accent focus-visible:ring-2 focus-visible:ring-notes-accent-strong/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
@@ -243,6 +274,14 @@ export function NoteForm({
                     )}
                 </div>
             </div>
+
+            <AiEditBox
+                isOpen={isAiBoxOpen}
+                isBusy={isAiEditing}
+                errorMessage={aiErrorMessage}
+                onSubmit={handleAiEdit}
+                onClose={() => setIsAiBoxOpen(false)}
+            />
         </form>
     );
 }

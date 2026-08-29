@@ -36,4 +36,6 @@ export interface NoteEditorHandle {
     toggle: (actionName: string) => void;
     /** Puts the caret back at the end of the note, for the focus shortcut. */
     focusEnd: () => void;
+    /** Replaces the whole note body — how an AI edit lands in the editor. */
+    setContent: (html: string) => void;
 }

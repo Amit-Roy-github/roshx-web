@@ -83,6 +83,7 @@ export function NoteEditor({ initialContent, onChange, onHandleChange }: NoteEdi
                     .map((action) => action.name),
                 toggle: (actionName) => COMMAND_BY_ACTION_NAME[actionName]?.(editor),
                 focusEnd: () => editor.commands.focus('end'),
+                setContent: (html) => editor.commands.setContent(html),
             });
         };
         publishHandle();

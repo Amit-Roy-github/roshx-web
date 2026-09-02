@@ -293,3 +293,30 @@ html.dark {
     --color-notes-accent-strong: var(--notes-accent-strong);
     --color-notes-danger: var(--notes-danger);
 }
+
+/* Tiptap wraps every table in .tableWrapper; scroll there so a wide table
+   never stretches the note panel sideways. */
+.note-prose .tableWrapper {
+    overflow-x: auto;
+    margin: 0.5em 0;
+}
+.note-prose table {
+    border-collapse: collapse;
+    width: 100%;
+}
+.note-prose th,
+.note-prose td {
+    border: 1px solid var(--notes-line);
+    padding: 0.3em 0.6em;
+    text-align: left;
+    vertical-align: top;
+}
+.note-prose th {
+    background: var(--notes-line-faint);
+    font-weight: 600;
+}
+/* Tiptap marks multi-cell selections with a class, not ::selection — without
+   this the selection is invisible. */
+.note-prose .selectedCell {
+    background: color-mix(in srgb, var(--notes-accent) 12%, transparent);
+}

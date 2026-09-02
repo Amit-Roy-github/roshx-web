@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
-import Placeholder from '@tiptap/extension-placeholder';
+import { TableKit } from '@tiptap/extension-table';
 import TaskItem from '@tiptap/extension-task-item';
 import TaskList from '@tiptap/extension-task-list';
+import { Placeholder } from '@tiptap/extensions';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { extractMarkdownFromClipboard, markdownToTiptapHtml } from '@/products/notes/markdownToTiptapHtml';
@@ -42,6 +43,10 @@ export function NoteEditor({ initialContent, onChange, onHandleChange }: NoteEdi
             StarterKit,
             TaskList,
             TaskItem.configure({ nested: true }),
+            // Fixed columns, no drag-resizing: resizing writes colwidth
+            // attributes into the stored HTML, and the note prose lays tables
+            // out fine without them.
+            TableKit.configure({ table: { resizable: false } }),
             Placeholder.configure({ placeholder: 'Write here...' }),
         ],
         content: initialContent,

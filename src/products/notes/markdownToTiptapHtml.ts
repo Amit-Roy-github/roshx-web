@@ -3,6 +3,9 @@ const BULLET_LINE = /^[-*+]\s+(.*)$/;
 const ORDERED_LINE = /^\d+\.\s+(.*)$/;
 const BLOCKQUOTE_LINE = /^>\s?(.*)$/;
 const CODE_FENCE_LINE = /^```/;
+const TABLE_ROW_LINE = /^\s*\|.*\|\s*$/;
+// The |---|:---:| row under a header — what separates a table from prose that happens to contain pipes.
+const TABLE_DELIMITER_LINE = /^\s*\|(?:\s*:?-+:?\s*\|)+\s*$/;
 
 function escapeHtml(text: string): string {
     return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -24,10 +27,25 @@ function renderList(items: string[], tag: 'ul' | 'ol'): string {
     return `<${tag}>${listItems}</${tag}>`;
 }
 
+function splitTableRowCells(line: string): string[] {
+    return line
+        .trim()
+        .replace(/^\|/, '')
+        .replace(/\|$/, '')
+        .split('|')
+        .map((cell) => cell.trim());
+}
+
+function renderTableRow(cells: string[], cellTag: 'th' | 'td'): string {
+    // Tiptap's table schema puts a paragraph inside every cell, same as list items.
+    const rowCells = cells.map((cell) => `<${cellTag}><p>${renderInline(cell)}</p></${cellTag}>`).join('');
+    return `<tr>${rowCells}</tr>`;
+}
+
 /**
  * Converts a fixed subset of markdown to HTML — only the node/mark types this
- * app's Tiptap schema (StarterKit, no extra nodes) actually renders: heading,
- * bold, italic, inline code, code block, blockquote, bullet/ordered list.
+ * app's Tiptap schema (StarterKit + tables) actually renders: heading, bold,
+ * italic, inline code, code block, blockquote, bullet/ordered list, table.
  * Not a general-purpose markdown renderer — intentionally narrower.
  */
 export function markdownToTiptapHtml(markdown: string): string {
@@ -98,6 +116,24 @@ export function markdownToTiptapHtml(markdown: string): string {
             continue;
         }
 
+        if (TABLE_ROW_LINE.test(line) && TABLE_DELIMITER_LINE.test(lineAt(index + 1))) {
+            const headerCells = splitTableRowCells(line);
+            const tableRows: string[] = [renderTableRow(headerCells, 'th')];
+            index += 2; // header + delimiter
+            while (index < lines.length && TABLE_ROW_LINE.test(lineAt(index))) {
+                // GFM: rows are squared to the header's width — extra cells are
+                // dropped, missing ones filled in empty.
+                const bodyCells = splitTableRowCells(lineAt(index)).slice(0, headerCells.length);
+                while (bodyCells.length < headerCells.length) {
+                    bodyCells.push('');
+                }
+                tableRows.push(renderTableRow(bodyCells, 'td'));
+                index++;
+            }
+            htmlBlocks.push(`<table><tbody>${tableRows.join('')}</tbody></table>`);
+            continue;
+        }
+
         const paragraphLines: string[] = [line];
         index++;
         while (
@@ -107,7 +143,8 @@ export function markdownToTiptapHtml(markdown: string): string {
             !BULLET_LINE.test(lineAt(index)) &&
             !ORDERED_LINE.test(lineAt(index)) &&
             !BLOCKQUOTE_LINE.test(lineAt(index)) &&
-            !CODE_FENCE_LINE.test(lineAt(index))
+            !CODE_FENCE_LINE.test(lineAt(index)) &&
+            !TABLE_ROW_LINE.test(lineAt(index))
         ) {
             paragraphLines.push(lineAt(index));
             index++;
@@ -118,7 +155,7 @@ export function markdownToTiptapHtml(markdown: string): string {
     return htmlBlocks.join('');
 }
 
-const MARKDOWN_LINE_PATTERN = /^(#{1,6}\s|[-*+]\s|\d+\.\s|>\s?|```)/m;
+const MARKDOWN_LINE_PATTERN = /^(#{1,6}\s|[-*+]\s|\d+\.\s|>\s?|```|\s*\|.*\|\s*$)/m;
 const SEMANTIC_HTML_PATTERN = /<(h[1-6]|ul|ol|strong|em|blockquote|pre|code)\b/i;
 
 /**

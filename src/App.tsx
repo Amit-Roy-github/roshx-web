@@ -31,7 +31,9 @@ export function App() {
 function AppShell() {
     const { theme, toggleTheme } = useTheme();
     const { pathname } = useLocation();
-    const hasOwnHeader = pathname === RoutePath.NOTES;
+    // `/notes/` is the same product as `/notes`. Treat both as owning their
+    // workspace chrome so a trailing slash cannot leave an empty site header.
+    const hasOwnHeader = pathname === RoutePath.NOTES || pathname.startsWith(`${RoutePath.NOTES}/`);
 
     return (
         <>
@@ -41,7 +43,11 @@ function AppShell() {
                 exactly as it did. */}
             <div className="flex h-dvh flex-col">
                 {!hasOwnHeader && <AppHeader theme={theme} onToggleTheme={toggleTheme} />}
-                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                <div
+                    className={`flex min-h-0 flex-1 flex-col ${
+                        hasOwnHeader ? 'overflow-hidden' : 'overflow-y-auto'
+                    }`}
+                >
                     <Routes>
                         <Route path={RoutePath.HOME} element={<AccountPage />} />
                         <Route path={RoutePath.PRACTICE} element={<PracticePage />} />

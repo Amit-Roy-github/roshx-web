@@ -17,7 +17,15 @@
 
         "noEmit": true,
         "skipLibCheck": true,
-        "paths": { "@/*": ["./src/*"] }
+        // @roshx/ui is symlinked while unpublished, so tsc resolves its bare
+        // "react-hook-form" imports through the symlink's real path and treats
+        // that copy's types as a different identity — Control<T> from one is
+        // then unassignable to Control<T> from the other. Same fix as the vite
+        // alias, one layer up. Drop this once @roshx/ui comes from npm.
+        "paths": {
+            "@/*": ["./src/*"],
+            "react-hook-form": ["./node_modules/react-hook-form"]
+        }
     },
     "include": ["src"]
 }

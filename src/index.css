@@ -261,8 +261,8 @@ body {
     --notes-ink: #18181b;
     --notes-ink-muted: #52525b;
     --notes-ink-faint: #71717a;
-    --notes-accent: #4338ca;
-    --notes-accent-strong: #4f46e5;
+    --notes-accent: #b45309;
+    --notes-accent-strong: #a16207;
     --notes-danger: #dc2626;
 }
 
@@ -275,8 +275,8 @@ html.dark {
     --notes-ink: #f5f5f5;
     --notes-ink-muted: #a3a3a3;
     --notes-ink-faint: #737373;
-    --notes-accent: #818cf8;
-    --notes-accent-strong: #4f46e5;
+    --notes-accent: #fbbf24;
+    --notes-accent-strong: #d97706;
     --notes-danger: #f87171;
 }
 

@@ -5,8 +5,11 @@ import TaskList from '@tiptap/extension-task-list';
 import { Placeholder } from '@tiptap/extensions';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { extractMarkdownFromClipboard, markdownToTiptapHtml } from '@/products/notes/markdownToTiptapHtml';
-import { TOOLBAR_GROUPS, type NoteEditorHandle } from '@/products/notes/noteToolbar';
+import {
+    extractMarkdownFromClipboard,
+    markdownToTiptapHtml,
+} from '@/products/notes/editor/markdownToTiptapHtml';
+import { TOOLBAR_GROUPS, type NoteEditorHandle } from '@/products/notes/editor/noteToolbar';
 
 /** The one place a toolbar name becomes an editor command. */
 const COMMAND_BY_ACTION_NAME: Record<string, (editor: Editor) => void> = {
@@ -88,7 +91,10 @@ export function NoteEditor({ initialContent, onChange, onHandleChange }: NoteEdi
                     .map((action) => action.name),
                 toggle: (actionName) => COMMAND_BY_ACTION_NAME[actionName]?.(editor),
                 focusEnd: () => editor.commands.focus('end'),
-                setContent: (html) => editor.commands.setContent(html),
+                // emitUpdate off: this is the form writing into the editor,
+                // so echoing it back as an edit would be a round trip that
+                // changes nothing.
+                setContent: (html) => editor.commands.setContent(html, { emitUpdate: false }),
             });
         };
         publishHandle();

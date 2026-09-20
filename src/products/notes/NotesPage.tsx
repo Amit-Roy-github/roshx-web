@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FolderSidebar } from '@/products/notes/FolderSidebar';
-import { HelpDialog } from '@/products/notes/HelpDialog';
-import { NotesHeader } from '@/products/notes/NotesHeader';
+import { FolderSidebar } from '@/products/notes/components/FolderSidebar';
+import { HelpDialog } from '@/products/notes/components/HelpDialog';
+import { NotesHeader } from '@/products/notes/components/NotesHeader';
 import { isEditableElementFocused, isModifierKeyPressed } from '@/products/notes/keyboard';
-import { NoteForm, type NoteFormHandle } from '@/products/notes/NoteForm';
-import { NoteList } from '@/products/notes/NoteList';
+import { NoteForm, type NoteFormHandle } from '@/products/notes/editor/NoteForm';
+import { NoteList } from '@/products/notes/components/NoteList';
 import { SpecialFolder } from '@/products/notes/specialFolder.enum';
 import {
     createDirectory,
@@ -23,7 +23,7 @@ const NOTES_QUERY_KEY = ['notes'];
 const DIRECTORIES_QUERY_KEY = ['directories'];
 
 /**
- * Notes: folders and the notes inside them on the left, one editor on the right.
+ * Notes is a three-pane workspace: folders, the active editor, and files.
  *
  * Everything is derived from two queries, so a note changing folders or a folder
  * being deleted needs no local bookkeeping — the lists are refetched and the
@@ -156,11 +156,10 @@ export function NotesPage() {
     }, [editingNote, removeNote]);
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col">
-            <NotesHeader onOpenHelp={() => setIsHelpOpen(true)} />
-
-            <main className="flex flex-1 overflow-hidden bg-notes-app">
-                <div className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto border-r border-notes-line bg-notes-surface px-3 py-8">
+        <div className="fixed inset-0 flex overflow-hidden bg-notes-app">
+            <aside className="flex w-60 shrink-0 flex-col border-r border-notes-line bg-notes-surface">
+                <NotesHeader onOpenHelp={() => setIsHelpOpen(true)} />
+                <div className="overflow-y-auto px-3 py-5">
                     <FolderSidebar
                         directories={directories}
                         notes={notes}
@@ -172,31 +171,39 @@ export function NotesPage() {
                         }
                         onDeleteFolder={(id) => removeFolder.mutateAsync(id).then(() => undefined)}
                     />
+                </div>
+            </aside>
+
+            <section className="flex min-w-0 flex-1 flex-col overflow-hidden overscroll-none">
+                <div className="flex min-h-0 flex-1 flex-col">
+                    <NoteForm
+                        ref={noteFormRef}
+                        editingNote={editingNote}
+                        directories={directories}
+                        defaultFolderId={defaultFolderId}
+                        onSubmit={(input) => saveNote.mutateAsync(input).then(() => undefined)}
+                        onCancelEdit={() => setEditingNote(null)}
+                        onDelete={(id) => removeNote.mutateAsync(id)}
+                    />
+                </div>
+
+                {notesQuery.isError && <p className="m-4 text-notes-danger">Could not load your notes.</p>}
+            </section>
+
+            <aside className="flex w-72 shrink-0 flex-col overflow-hidden border-l border-notes-line bg-notes-surface">
+                <div className="shrink-0 border-b border-notes-line-faint px-4 py-4">
+                    <h2 className="text-xs font-semibold tracking-wide text-notes-ink-faint uppercase">
+                        Files
+                    </h2>
+                </div>
+                <div className="overflow-y-auto p-3">
                     <NoteList
                         notes={visibleNotes}
                         selectedNoteId={editingNote?.id ?? null}
                         onSelect={setEditingNote}
                     />
                 </div>
-
-                <div className="flex-auto overflow-y-auto p-2">
-                    <div className="mb-8">
-                        <NoteForm
-                            ref={noteFormRef}
-                            editingNote={editingNote}
-                            directories={directories}
-                            defaultFolderId={defaultFolderId}
-                            onSubmit={(input) => saveNote.mutateAsync(input).then(() => undefined)}
-                            onCancelEdit={() => setEditingNote(null)}
-                            onDelete={(id) => removeNote.mutateAsync(id)}
-                        />
-                    </div>
-
-                    {notesQuery.isError && (
-                        <p className="mb-4 text-notes-danger">Could not load your notes.</p>
-                    )}
-                </div>
-            </main>
+            </aside>
 
             <HelpDialog isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
         </div>

@@ -11,15 +11,21 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),
-            // @roshx/ui is a symlinked file: dep with its own node_modules/react
+            // @roshx/ui is a symlinked file: dep with its own node_modules
             // (it needs one to build itself). Without these aliases esbuild
-            // resolves React through the symlink's real path and bundles a
-            // second copy into the @roshx/ui prebundle, so every hook the kit
-            // calls throws "Invalid hook call". Pin both to this app's copy.
+            // resolves through the symlink's real path and bundles a second
+            // copy into the @roshx/ui prebundle, so every hook the kit calls
+            // throws "Invalid hook call". react-hook-form is pinned for the
+            // same reason one step further in: <FormField> reads the context
+            // this app's useForm() published, and a second copy sees an empty
+            // one. Pin all three to this app's copy.
             react: fileURLToPath(new URL('./node_modules/react', import.meta.url)),
             'react-dom': fileURLToPath(new URL('./node_modules/react-dom', import.meta.url)),
+            'react-hook-form': fileURLToPath(
+                new URL('./node_modules/react-hook-form', import.meta.url),
+            ),
         },
-        dedupe: ['react', 'react-dom'],
+        dedupe: ['react', 'react-dom', 'react-hook-form'],
     },
     optimizeDeps: {
         // The shared packages are symlinked (file: deps) while unpublished.

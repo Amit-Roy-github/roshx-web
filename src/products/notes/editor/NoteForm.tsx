@@ -8,8 +8,8 @@ import {
     type Ref,
 } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { Button, Form, FormControl, FormField, FormItem, FormMessage, cn } from '@roshx/ui';
+import { Controller, FormProvider, useForm } from 'react-hook-form';
+import { Button, cn } from '@roshx/ui';
 import { Trash2Icon, XIcon } from 'lucide-react';
 import { MODIFIER_KEY_LABEL } from '@/products/notes/keyboard';
 import { NoteContentField } from '@/products/notes/editor/NoteContentField';
@@ -159,7 +159,7 @@ export function NoteForm({
     }, [editingNote?.id]);
 
     return (
-        <Form {...form}>
+        <FormProvider {...form}>
             <form
                 ref={formRef}
                 onSubmit={form.handleSubmit(handleValidSubmit)}
@@ -168,25 +168,27 @@ export function NoteForm({
                 className="flex min-h-0 flex-1 flex-col"
             >
                 <div ref={titleRegionRef}>
-                    <FormField
+                    <Controller
                         control={form.control}
                         name="title"
-                        render={({ field }) => (
-                            <FormItem className="gap-0 border-b border-notes-line-faint">
-                                <FormControl>
-                                    <input
-                                        {...field}
-                                        ref={(element) => {
-                                            field.ref(element);
-                                            titleInputRef.current = element;
-                                        }}
-                                        type="text"
-                                        placeholder="Title"
-                                        className="w-full rounded-lg px-4 pt-5 pb-3 text-notes-ink placeholder-notes-ink-faint outline-none"
-                                    />
-                                </FormControl>
-                                <FormMessage className={cn(fieldMessageClass, 'px-3 pb-1')} />
-                            </FormItem>
+                        render={({ field, fieldState }) => (
+                            <div className="gap-0 border-b border-notes-line-faint">
+                                <input
+                                    {...field}
+                                    ref={(element) => {
+                                        field.ref(element);
+                                        titleInputRef.current = element;
+                                    }}
+                                    type="text"
+                                    placeholder="Title"
+                                    className="w-full rounded-lg px-4 pt-5 pb-3 text-notes-ink placeholder-notes-ink-faint outline-none"
+                                />
+                                {fieldState.error?.message && (
+                                    <p className={cn(fieldMessageClass, 'px-3 pb-1')}>
+                                        {fieldState.error.message}
+                                    </p>
+                                )}
+                            </div>
                         )}
                     />
                 </div>
@@ -198,18 +200,22 @@ export function NoteForm({
                         isContentScrollable && 'min-h-0 flex-1 overflow-y-auto overscroll-none',
                     )}
                 >
-                    <FormField
+                    <Controller
                         control={form.control}
                         name="content"
-                        render={({ field }) => (
-                            <FormItem className="gap-0">
+                        render={({ field, fieldState }) => (
+                            <div className="gap-0">
                                 <NoteContentField
                                     field={field}
                                     editorHandle={editorHandle}
                                     onHandleChange={handleEditorHandleChange}
                                 />
-                                <FormMessage className={cn(fieldMessageClass, 'mt-2')} />
-                            </FormItem>
+                                {fieldState.error?.message && (
+                                    <p className={cn(fieldMessageClass, 'mt-2')}>
+                                        {fieldState.error.message}
+                                    </p>
+                                )}
+                            </div>
                         )}
                     />
                 </div>
@@ -237,33 +243,29 @@ export function NoteForm({
                             </div>
                         ))}
 
-                        <FormField
+                        <Controller
                             control={form.control}
                             name="folderId"
                             render={({ field }) => (
-                                <FormItem className="gap-0">
-                                    <FormControl>
-                                        <select
-                                            name={field.name}
-                                            ref={field.ref}
-                                            onBlur={field.onBlur}
-                                            // A <select> only speaks strings, so the
-                                            // empty option is what "no folder" looks
-                                            // like on the way in and out.
-                                            value={field.value ?? UNCATEGORIZED_OPTION_VALUE}
-                                            onChange={(event) => field.onChange(event.target.value || null)}
-                                            title="Folder"
-                                            className="rounded-md border border-notes-line bg-notes-surface px-2 py-1 text-xs text-notes-ink-muted outline-none transition-colors hover:text-notes-ink focus:border-notes-accent"
-                                        >
-                                            <option value={UNCATEGORIZED_OPTION_VALUE}>Uncategorized</option>
-                                            {directories.map((directory) => (
-                                                <option key={directory.id} value={directory.id}>
-                                                    {directory.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </FormControl>
-                                </FormItem>
+                                <select
+                                    name={field.name}
+                                    ref={field.ref}
+                                    onBlur={field.onBlur}
+                                    // A <select> only speaks strings, so the
+                                    // empty option is what "no folder" looks
+                                    // like on the way in and out.
+                                    value={field.value ?? UNCATEGORIZED_OPTION_VALUE}
+                                    onChange={(event) => field.onChange(event.target.value || null)}
+                                    title="Folder"
+                                    className="rounded-md border border-notes-line bg-notes-surface px-2 py-1 text-xs text-notes-ink-muted outline-none transition-colors hover:text-notes-ink focus:border-notes-accent"
+                                >
+                                    <option value={UNCATEGORIZED_OPTION_VALUE}>Uncategorized</option>
+                                    {directories.map((directory) => (
+                                        <option key={directory.id} value={directory.id}>
+                                            {directory.name}
+                                        </option>
+                                    ))}
+                                </select>
                             )}
                         />
                     </div>
@@ -316,6 +318,6 @@ export function NoteForm({
                     </div>
                 </div>
             </form>
-        </Form>
+        </FormProvider>
     );
 }

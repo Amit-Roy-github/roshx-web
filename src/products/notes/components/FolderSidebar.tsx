@@ -87,8 +87,8 @@ export function FolderSidebar({
     };
 
     return (
-        <div className="flex flex-col gap-0.5 border-b border-notes-line-faint pb-3">
-            <div className="mb-1 flex items-center justify-between px-1">
+        <div className="flex flex-col gap-0.5 border-b border-notes-line-faint pb-1">
+            <div className="flex items-center justify-between px-1">
                 <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-notes-ink-faint uppercase">
                     <FolderIcon aria-hidden="true" className="size-3.5" />
                     Folders

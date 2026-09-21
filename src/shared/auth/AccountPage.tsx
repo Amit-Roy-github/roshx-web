@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ApiError } from '@roshx/core';
 import {
     Card,
@@ -14,6 +15,7 @@ import { AppButton } from '@/shared/components/AppButton';
 import { useSession } from '@/shared/auth/useSession';
 import { AccountFormMode } from '@/shared/auth/accountFormMode.enum';
 import { GoogleSignInButton } from '@/shared/auth/GoogleSignInButton';
+import { RoutePath } from '@/routes/routePaths';
 
 const MODE_COPY: Record<
     AccountFormMode,
@@ -67,6 +69,7 @@ function PageFrame({ children }: { children: ReactNode }) {
 
 function AccountForm() {
     const session = useSession();
+    const navigate = useNavigate();
     const [mode, setMode] = useState<AccountFormMode>(AccountFormMode.SIGN_IN);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -84,6 +87,7 @@ function AccountForm() {
             await (mode === AccountFormMode.SIGN_IN
                 ? session.signIn(credentials)
                 : session.signUp(credentials));
+            navigate(RoutePath.NOTES, { replace: true });
         } catch (error) {
             // The kit hands back an ApiError, whose message the server wrote for
             // a person to read — "Invalid email or password" says more than
@@ -102,6 +106,7 @@ function AccountForm() {
         setIsSubmitting(true);
         session
             .signInWithGoogle(idToken)
+            .then(() => navigate(RoutePath.NOTES, { replace: true }))
             .catch((error: ApiError) => setErrorMessage(error.message || UNEXPECTED_FAILURE_MESSAGE))
             .finally(() => setIsSubmitting(false));
     };

@@ -51,8 +51,9 @@ export function NoteComposer({ disabled = false }: { disabled?: boolean }) {
                 aria-controls={isOpen ? dialogId : undefined}
                 aria-haspopup="dialog"
                 onClick={() => (isOpen ? close() : setIsOpen(true))}
-                className="rounded-lg border-notes-accent-strong/30 text-notes-accent shadow-none hover:bg-notes-accent-strong/10 hover:text-notes-accent focus-visible:ring-notes-accent/30"
+                className="gap-1.5 rounded-lg border-notes-accent-strong/30 text-notes-accent shadow-none hover:bg-notes-accent-strong/10 hover:text-notes-accent focus-visible:ring-notes-accent/30"
             >
+                <SparklesIcon aria-hidden="true" className="size-4" />
                 RoshxAI
             </Button>
             {isOpen &&
